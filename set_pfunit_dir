@@ -1,0 +1,2 @@
+# Set this to your pFUnit install location
+export PFUNIT_DIR=/home/ubuntu/pFUnit/build/installed

@@ -1,0 +1,10 @@
+@test
+subroutine test_fac()
+   use fac
+   use funit
+
+   @assertEqual(120, factorial(5), 'factorial(5)')
+   @assertEqual(1, factorial(1), 'factorial(1)')
+   @assertEqual(1, factorial(0), 'factorial(0)')
+
+end subroutine test_fac
