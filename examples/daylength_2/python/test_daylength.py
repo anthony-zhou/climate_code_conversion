@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from daylength import daylength
+from chatgpt_daylength import daylength
 
 # tolerance
 tol = 1e-3

@@ -6,7 +6,7 @@ module DaylengthMod
    ! !DESCRIPTION:
    ! Computes daylength
    !
- #include "shr_assert.h"
+use shr_assert_mod
    use shr_kind_mod , only : r8 => shr_kind_r8
    use decompMod    , only : bounds_type
    use GridcellType , only : grc                
@@ -110,8 +110,8 @@ module DaylengthMod
      character(len=*), parameter :: subname = 'ComputeMaxDaylength'
      !-----------------------------------------------------------------------
  
-     SHR_ASSERT_ALL_FL((ubound(lat) == (/bounds%endg/)), sourcefile, 111)
-     SHR_ASSERT_ALL_FL((ubound(max_daylength) == (/bounds%endg/)), sourcefile, 112)
+     call shr_assert_all((ubound(lat) == (/bounds%endg/)), file= sourcefile, line= 111)
+     call shr_assert_all((ubound(max_daylength) == (/bounds%endg/)), file= sourcefile, line= 112)
  
      do g = bounds%begg,bounds%endg
         max_decl = obliquity
