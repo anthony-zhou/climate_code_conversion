@@ -39,3 +39,5 @@
 
 # Python
 **/__pycache__
+
+.env

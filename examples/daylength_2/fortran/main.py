@@ -10,6 +10,11 @@ import pprint
 import networkx as nx
 import matplotlib.pyplot as plt
 
+import openai
+import os
+import dotenv
+
+dotenv.load_dotenv()
 
 def parse_source(file_path):
     f2003_parser = ParserFactory().create(std="f2003")
@@ -79,6 +84,20 @@ def draw_dag_and_save(dag, filename):
     plt.savefig(filename)
 
 
+def generate_unit_tests(source_code):
+    openai.api_key = os.environ["OPENAI_API_KEY"]
+
+    completion = openai.ChatCompletion.create(
+    model="gpt-3.5-turbo",
+    messages=[
+        {"role": "user", "content": "Generate unit tests for the following code: \n" + source_code + "\n"},
+    ]
+    )
+
+    print(completion.choices[0].message)
+    return completion.choices[0].message['content']
+
+
 
 # Generate a DAG from the dependencies
 
@@ -91,6 +110,10 @@ for func_name in sorted_functions:
     print(func_name)
 
 draw_dag_and_save(dependencies_to_dag(dependencies), "dag.png")
+
+unit_tests = generate_unit_tests(dependencies["daylength"]["source"])
+
+print(unit_tests)
 
 # nodes = get_subroutines_and_functions()
 # for node in nodes:
