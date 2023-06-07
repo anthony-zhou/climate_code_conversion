@@ -74,7 +74,8 @@ def topological_sort(dependencies):
 
 def draw_dag_and_save(dag, filename):
     pos = nx.drawing.nx_agraph.graphviz_layout(dag, prog='dot')
-    nx.draw(dag, pos, with_labels=True, arrows=True)
+    nx.draw(dag, pos, with_labels=True, arrows=True, node_color="skyblue")
+    plt.margins(0.20)
     plt.savefig(filename)
 
 
