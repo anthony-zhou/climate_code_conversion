@@ -90,7 +90,7 @@ def generate_unit_tests(source_code):
     completion = openai.ChatCompletion.create(
     model="gpt-3.5-turbo",
     messages=[
-        {"role": "user", "content": "Generate unit tests for the following code: \n" + source_code + "\n"},
+        {"role": "user", "content": "Generate unit tests in Fortran for the following code: \n" + source_code + "\n"},
     ]
     )
 
@@ -108,12 +108,13 @@ sorted_functions = topological_sort(dependencies)
 
 for func_name in sorted_functions:
     print(func_name)
+    print(dependencies[func_name]["source"])
 
 draw_dag_and_save(dependencies_to_dag(dependencies), "dag.png")
 
-unit_tests = generate_unit_tests(dependencies["daylength"]["source"])
+# unit_tests = generate_unit_tests(dependencies["daylength"]["source"])
 
-print(unit_tests)
+# print(unit_tests)
 
 # nodes = get_subroutines_and_functions()
 # for node in nodes:
