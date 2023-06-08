@@ -10,20 +10,15 @@ import pprint
 import networkx as nx
 import matplotlib.pyplot as plt
 
-import openai
-import os
-import dotenv
 
-dotenv.load_dotenv()
-
-def parse_source(file_path):
+def _parse_source(file_path):
     f2003_parser = ParserFactory().create(std="f2003")
     reader = FortranFileReader(file_path)
     parse_tree = f2003_parser(reader)
     return parse_tree
 
 
-def find_calls(node, func_name=None):
+def _find_calls(node, func_name=None):
     if isinstance(
         node, (Fortran2003.Function_Subprogram, Fortran2003.Subroutine_Subprogram)
     ):
@@ -41,21 +36,21 @@ def find_calls(node, func_name=None):
         and type(node) is not tuple
     ):
         for child in node.children:
-            yield from find_calls(child, func_name)
+            yield from _find_calls(child, func_name)
 
 
-def find_dependencies(source):
-    ast = parse_source(source)
+def _find_dependencies(source):
+    ast = _parse_source(source)
     dependencies = defaultdict(lambda: {"source": "", "calls": []})
-    for func_name, source_code, call in find_calls(ast):
+    for func_name, source_code, call in _find_calls(ast):
         if source_code != "":
             dependencies[func_name]["source"] = source_code
         if call is not None:
-            dependencies[func_name]["calls"].append(call)
+            dependencies[func_name]["calls"].append(call) # type: ignore
     return dict(dependencies)
 
 
-def dependencies_to_dag(dependencies):
+def _dependencies_to_dag(dependencies):
     """
     In this DAG, the nodes are functions and the edges are calls.
     An arrow means that the function at the tail of the arrow calls the function at the head of the arrow.
@@ -72,51 +67,40 @@ def dependencies_to_dag(dependencies):
     return dag
 
 
-def topological_sort(dependencies):
-    dag = dependencies_to_dag(dependencies)
-    return list(nx.topological_sort(dag))
+def _topological_sort(dependencies):
+    dag = _dependencies_to_dag(dependencies)
+    return list(nx.topological_sort(dag)) # type: ignore
 
 
 def draw_dag_and_save(dag, filename):
-    pos = nx.drawing.nx_agraph.graphviz_layout(dag, prog='dot')
-    nx.draw(dag, pos, with_labels=True, arrows=True, node_color="skyblue")
+    pos = nx.drawing.nx_agraph.graphviz_layout(dag, prog="dot")
+    nx.draw(dag, pos, with_labels=True, arrows=True, node_color="skyblue") # type: ignore
     plt.margins(0.20)
     plt.savefig(filename)
 
 
-def generate_unit_tests(source_code):
-    openai.api_key = os.environ["OPENAI_API_KEY"]
+def get_sorted_functions(source_file):
+    dependencies = _find_dependencies(source_file)
+    sorted_keys = _topological_sort(dependencies)
+    return [(key, dependencies.get(key, {"source": "not_found", "calls": []})) for key in sorted_keys]
 
-    completion = openai.ChatCompletion.create(
-    model="gpt-3.5-turbo",
-    messages=[
-        {"role": "user", "content": "Generate unit tests in Fortran for the following code: \n" + source_code + "\n"},
-    ]
+
+if __name__ == "__main__":
+    # Generate a DAG from the dependencies
+
+    pp = pprint.PrettyPrinter(indent=4)
+
+    sorted_functions = get_sorted_functions(
+        "./examples/daylength_2/fortran/DaylengthMod.f90"
     )
 
-    print(completion.choices[0].message)
-    return completion.choices[0].message['content']
+    for func_name, func in sorted_functions:
+        print(func_name)
+        print(func["source"])
 
-
-
-# Generate a DAG from the dependencies
-
-pp = pprint.PrettyPrinter(indent=4)
-
-dependencies = find_dependencies("DaylengthMod.f90")
-sorted_functions = topological_sort(dependencies)
-
-for func_name in sorted_functions:
-    print(func_name)
-    print(dependencies[func_name]["source"])
-
-draw_dag_and_save(dependencies_to_dag(dependencies), "dag.png")
-
-# unit_tests = generate_unit_tests(dependencies["daylength"]["source"])
-
-# print(unit_tests)
-
-# nodes = get_subroutines_and_functions()
-# for node in nodes:
-#     print(node)
-#     print()
+    draw_dag_and_save(
+        _dependencies_to_dag(
+            _find_dependencies("./examples/daylength_2/fortran/DaylengthMod.f90")
+        ),
+        "dag.png",
+    )

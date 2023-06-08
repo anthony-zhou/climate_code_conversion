@@ -3,7 +3,7 @@ import tempfile
 import os
 import re
 
-def extract_pytest_output(output):
+def _extract_pytest_output(output):
     """
     Get everything after ============================= test session starts ============================== (including that line)
     """
@@ -13,7 +13,7 @@ def extract_pytest_output(output):
     return f"============================= test session starts ==============================\n{result}"
 
 
-def run_tests(source_code):
+def _run_tests_in_docker(source_code):
     """
     Run unit tests on the given source code and return the output.
     Uses Docker in case we need to install dependencies.
@@ -59,24 +59,9 @@ def run_tests(source_code):
     return output.decode("utf-8")
 
 
-# Source code for your unit tests
-source_code = """
-import pytest
+def run_tests(source_code):
+    output = _run_tests_in_docker(source_code)
 
-def test_addition():
-    assert 1 + 1 == 2
+    result = _extract_pytest_output(output)
 
-def test_subtraction():
-    assert 3 - 2 == 0
-
-# Add more tests as needed
-"""
-
-# Run the tests and capture the output
-output = run_tests(source_code)
-
-result = extract_pytest_output(output)
-
-# Print the errors and failing test cases
-print("Result:")
-print(result)
+    return result
