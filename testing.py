@@ -13,7 +13,7 @@ def _extract_pytest_output(output):
     return f"============================= test session starts ==============================\n{result}"
 
 
-def _run_tests_in_docker(source_code):
+def _run_tests_in_docker(source_code, docker_image="python:3.8"):
     """
     Run unit tests on the given source code and return the output.
     Uses Docker in case we need to install dependencies.
@@ -23,7 +23,7 @@ def _run_tests_in_docker(source_code):
     client = docker.from_env()
 
     # Pull the Python Docker image
-    client.images.pull("python:3.8")
+    client.images.pull(docker_image)
 
     test_dir = os.getcwd() + "/tests"
 
@@ -59,8 +59,8 @@ def _run_tests_in_docker(source_code):
     return output.decode("utf-8")
 
 
-def run_tests(source_code):
-    output = _run_tests_in_docker(source_code)
+def run_tests(source_code, docker_image="python:3.8"):
+    output = _run_tests_in_docker(source_code, docker_image=docker_image)
 
     result = _extract_pytest_output(output)
 
