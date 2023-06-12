@@ -27,7 +27,11 @@ def _generate_fortran_unit_tests(source_code):
     print("Generating unit tests in Fortran...")
 
     prompt = f"""
+    Given fortran code, write unit tests using funit.
+
+    Example:
     FORTRAN CODE:
+    ```
     module fac
         implicit none
         
@@ -44,6 +48,7 @@ def _generate_fortran_unit_tests(source_code):
             end if
         end function factorial
     end module fac
+    ```
 
     FORTRAN TESTS:
     ```
@@ -58,7 +63,8 @@ def _generate_fortran_unit_tests(source_code):
     end subroutine test_fac
     ```
 
-    FORTRAN CODE:\n{source_code}\n
+    Your turn:
+    FORTRAN CODE:\n```\n{source_code}\n```\n
     FORTRAN TESTS:
     """
     print(f"PROMPT: {prompt}")
