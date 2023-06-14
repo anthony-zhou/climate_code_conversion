@@ -124,4 +124,4 @@ if __name__ == "__main__":
         "dag.png",
     )
 
-    draw_dag_interactive(dag, "./output/dag.html")
+    draw_dag_interactive(dag, "./output/dag2.html")
