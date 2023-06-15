@@ -15,8 +15,10 @@ from tenacity import (
 dotenv.load_dotenv()
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
+model_name = "gpt-3.5-turbo-0613"
 
 example_file = "./examples/daylength_2/fortran/DaylengthMod.f90"
+
 
 @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(20))
 def completion_with_backoff(**kwargs):
@@ -70,17 +72,15 @@ def _generate_fortran_unit_tests(source_code):
     print(f"PROMPT: {prompt}")
 
     completion = completion_with_backoff(
-        model="gpt-3.5-turbo",
+        model=model_name,
         messages=[
-            {
-                "role": "system",
-                "content": "You're a proficient Fortran programmer."
-            },
+            {"role": "system", "content": "You're a proficient Fortran programmer."},
             {
                 "role": "user",
                 "content": prompt,
             },
-        ]
+        ],
+        temperature=0,
     )
 
     print(f'COMPLETION: {completion.choices[0].message["content"]}')
@@ -95,28 +95,31 @@ def _translate_tests_to_python(unit_tests):
     print("Translating unit tests to Python...")
 
     prompt = f"""
-    Convert the following unit tests from Fortran to Python using pytest: ```\n{unit_tests}```\n
+    Convert the following unit tests from Fortran to Python using pytest. No need to import the module under test. ```\n{unit_tests}```\n
     """
     print(f"PROMPT: {prompt}")
 
     completion = completion_with_backoff(
-        model="gpt-3.5-turbo",
+        model=model_name,
         messages=[
             {
                 "role": "system",
-                "content": "You're a programmer proficient in Fortran and Python."
+                "content": "You're a programmer proficient in Fortran and Python.",
             },
             {
                 "role": "user",
                 "content": prompt,
             },
-        ]
+        ],
+        temperature=0,
     )
 
     print(f'COMPLETION: {completion.choices[0].message["content"]}')
 
     # Extract the code block from the completion
     unit_tests = completion.choices[0].message["content"].split("```")[1]
+    # Remove `python` from the first line
+    unit_tests = unit_tests.replace("python\n", "")
 
     return unit_tests
 
@@ -127,11 +130,6 @@ def generate_unit_tests(source_code):
     print("Done!")
 
     return python_tests
-
-
-# def run_tests(source_code):
-#     test_output = testing.run_tests(source_code)
-#     print(test_output)
 
 
 if __name__ == "__main__":
@@ -176,6 +174,8 @@ def daylength(lat, decl):
     unit_tests = generate_unit_tests(source_code)
 
     # Run the unit tests
-    test_output = testing.run_tests(generated_code + '\n' + unit_tests, docker_image="slothai/numpy")
+    test_output = testing.run_tests(
+        generated_code + "\n" + unit_tests, docker_image="python:3.8"
+    )
     print(test_output)
     # run_tests(source_code)
