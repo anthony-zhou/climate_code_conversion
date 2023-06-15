@@ -12,9 +12,10 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import pygraphviz as pgv
 
+
 def _parse_source(file_path):
     f2003_parser = ParserFactory().create(std="f2003")
-    reader = FortranFileReader(file_path)
+    reader = FortranFileReader(file_path, ignore_comments=False)
     parse_tree = f2003_parser(reader)
     return parse_tree
 
@@ -23,9 +24,14 @@ def _find_calls(node, func_name=None):
     if isinstance(
         node, (Fortran2003.Function_Subprogram, Fortran2003.Subroutine_Subprogram)
     ):
-        func_name = str(node.content[0].get_name())
+        # Get first non-comment item in the node
+        index = 0
+        while isinstance(node.content[index], Fortran2003.Comment):
+            index += 1
+        func_name = str(node.content[index].get_name())
         print(f"Found function or subroutine {func_name}")
         source_code = str(node)
+        # print(f"Source code: {source_code}")
         yield (func_name, source_code, None)
     if isinstance(node, Fortran2003.Call_Stmt):
         yield (func_name, "", str(node.items[0]))
@@ -47,7 +53,7 @@ def _find_dependencies(source):
         if source_code != "":
             dependencies[func_name]["source"] = source_code
         if call is not None:
-            dependencies[func_name]["calls"].append(call) # type: ignore
+            dependencies[func_name]["calls"].append(call)  # type: ignore
     return dict(dependencies)
 
 
@@ -70,19 +76,19 @@ def _dependencies_to_dag(dependencies):
 
 def _topological_sort(dependencies):
     dag = _dependencies_to_dag(dependencies)
-    return list(nx.topological_sort(dag)) # type: ignore
+    return list(nx.topological_sort(dag))  # type: ignore
 
 
 def draw_dag_and_save(dag, filename):
     A = nx.nx_agraph.to_agraph(dag)
-    A.graph_attr['ranksep'] = '10.0'
-    A.graph_attr['nodesep'] = '1.0'
+    A.graph_attr["ranksep"] = "10.0"
+    A.graph_attr["nodesep"] = "1.0"
     G = nx.DiGraph(A)
     layout = nx.drawing.nx_agraph.graphviz_layout(G, prog="dot")
 
     # layout = nx.spring_layout(dag, k=0.7)
     plt.figure(figsize=(30, 30))
-    nx.draw(dag, pos=layout, with_labels=True, arrows=True, node_color="skyblue") # type: ignore
+    nx.draw(dag, pos=layout, with_labels=True, arrows=True, node_color="skyblue")  # type: ignore
     plt.margins(0.20)
     plt.savefig(filename)
 
@@ -98,7 +104,10 @@ def draw_dag_interactive(dag, outfile):
 def get_sorted_functions(source_file):
     dependencies = _find_dependencies(source_file)
     sorted_keys = _topological_sort(dependencies)
-    return [(key, dependencies.get(key, {"source": "not_found", "calls": []})) for key in sorted_keys]
+    return [
+        (key, dependencies.get(key, {"source": "not_found", "calls": []}))
+        for key in sorted_keys
+    ]
 
 
 if __name__ == "__main__":
@@ -115,13 +124,13 @@ if __name__ == "__main__":
         print(func_name)
         print(func["source"])
 
-    dag = _dependencies_to_dag(
-            _find_dependencies("./examples/photosynthesis/PhotosynthesisMod.f90")
-        )
+    # dag = _dependencies_to_dag(
+    #     _find_dependencies("./examples/photosynthesis/PhotosynthesisMod.f90")
+    # )
 
-    draw_dag_and_save(
-        dag,
-        "dag.png",
-    )
+    # draw_dag_and_save(
+    #     dag,
+    #     "dag.png",
+    # )
 
-    draw_dag_interactive(dag, "./output/dag2.html")
+    # draw_dag_interactive(dag, "./output/dag2.html")
