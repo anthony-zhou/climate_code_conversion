@@ -1,16 +1,5 @@
 subroutine ci_func(ci, fval, p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z,&
     rh_can, gs_mol, atm2lnd_inst, photosyns_inst)
-!
-!! DESCRIPTION:
-! evaluate the function
-! f(ci)=ci - (ca - (1.37rb+1.65rs))*patm*an
-!
-! remark:  I am attempting to maintain the original code structure, also
-! considering one may be interested to output relevant variables for the
-! photosynthesis model, I have decided to add these relevant variables to
-! the relevant data types.
-!
-!!ARGUMENTS:
 real(r8)             , intent(in)    :: ci       ! intracellular leaf CO2 (Pa)
 real(r8)             , intent(in)    :: lmr_z    ! canopy layer: leaf maintenance respiration rate (umol CO2/m**2/s)
 real(r8)             , intent(in)    :: par_z    ! par absorbed per unit lai for canopy layer (w/m**2)
