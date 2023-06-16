@@ -122,7 +122,10 @@ if __name__ == "__main__":
 
     for func_name, func in sorted_functions:
         print(func_name)
-        print(func["source"])
+        if func_name == 'ci_func':
+            print(func["source"])
+        # print(func["source"])
+
 
     # dag = _dependencies_to_dag(
     #     _find_dependencies("./examples/photosynthesis/PhotosynthesisMod.f90")

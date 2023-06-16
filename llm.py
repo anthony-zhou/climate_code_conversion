@@ -132,6 +132,38 @@ def generate_unit_tests(source_code):
     return python_tests
 
 
+def _translate_function_to_python(source_code):
+    print("Translating function to Python...")
+    prompt = f"""
+    Convert the following Fortran function to Python. ```\n{source_code}```\n
+    """
+    print(f"PROMPT: {prompt}")
+
+    completion = completion_with_backoff(
+        model=model_name,
+        messages=[
+            {
+                "role": "system",
+                "content": "You're a programmer proficient in Fortran and Python.",
+            },
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ],
+        temperature=0,
+    )
+
+    print(f'COMPLETION: {completion.choices[0].message["content"]}')
+
+    # Extract the code block from the completion
+    python_function = completion.choices[0].message["content"].split("```")[1]
+    # Remove `python` from the first line
+    python_function = python_function.replace("python\n", "")
+
+    return python_function
+
+
 if __name__ == "__main__":
     generated_code = """
 import numpy as np
