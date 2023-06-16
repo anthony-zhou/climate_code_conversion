@@ -35,6 +35,9 @@
 # CMake
 **/build
 
+# VSCode
+.vscode/
+
 
 
 # Python
