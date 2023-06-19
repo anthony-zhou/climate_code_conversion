@@ -166,7 +166,7 @@ use shr_assert_mod
         real(r8), pointer, private :: gb_mol_patch      (:)   ! patch leaf boundary layer conductance (umol H2O/m**2/s)
         real(r8), pointer, private :: rh_leaf_patch     (:)   ! patch fractional humidity at leaf surface (dimensionless)
         real(r8), pointer, private :: vpd_can_patch     (:)   ! patch canopy vapor pressure deficit (kPa)
-        real(r8), pointer, private :: alphapsnsun_patch (:)   ! patch sunlit 13c fractionation ([])
+        real(r8), pointer, private :: falphapsnsun_patch (:)   ! patch sunlit 13c fractionation ([])
         real(r8), pointer, private :: alphapsnsha_patch (:)   ! patch shaded 13c fractionation ([])
 
         real(r8), pointer, public  :: rc13_canair_patch (:)   ! patch C13O2/C12O2 in canopy air
