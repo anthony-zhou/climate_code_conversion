@@ -63,7 +63,8 @@ def _run_tests_in_docker(source_code, docker_image):
     return output.decode("utf-8")
 
 
-def run_tests(source_code, docker_image):
+def run_tests(source_code, unit_tests, docker_image):
+    source_code = source_code + "\n" + unit_tests
     output = _run_tests_in_docker(source_code, docker_image=docker_image)
 
     result = _extract_pytest_output(output)
@@ -71,13 +72,13 @@ def run_tests(source_code, docker_image):
     return result
 
 
-if __name__ == "__main__":
-    source_code = """
-import numpy as np
-import pytest
+# if __name__ == "__main__":
+#     source_code = """
+# import numpy as np
+# import pytest
 
-def test_add():
-    assert 1 + 1 == 2
-    """
-    results = run_tests(source_code, docker_image="python:3.8")
-    print(results)
+# def test_add():
+#     assert 1 + 1 == 2
+#     """
+#     results = run_tests(source_code, docker_image="python:3.8")
+#     print(results)
