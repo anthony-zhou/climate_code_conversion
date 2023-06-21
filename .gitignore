@@ -45,3 +45,6 @@
 
 # Output files
 output
+
+# VSCode
+.vscode
