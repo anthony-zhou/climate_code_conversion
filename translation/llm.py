@@ -166,11 +166,15 @@ def _translate_function_to_python(source_code):
     return python_function
 
 
-def iterate(fortran_function, fortran_unit_tests, python_function, python_unit_tests, python_test_results):
+def iterate(fortran_function, fortran_unit_tests, python_function, python_unit_tests, python_test_results, temperature=0.0):
     messages = [
             {
             "role": "system",
-            "content": """You're a programmer proficient in Fortran and Python. You can write and execute Python code by enclosing it in triple backticks, e.g. ```code goes here```""",
+            "content": """You're a programmer proficient in Fortran and Python. You can write and execute Python code by enclosing it in triple backticks, e.g. ```code goes here```.
+            When prompted to fix source code and unit tests, always return a response of the form:
+            SOURCE CODE: ```<python source code>```
+            UNIT TESTS: ```<python unit tests>```. Do not return any additional context.
+            """,
         },
         {
             "role": "user",
@@ -184,17 +188,17 @@ def iterate(fortran_function, fortran_unit_tests, python_function, python_unit_t
             "role": "user",
             "content": f"""
             Here are some unit tests for the above code and the corresponding output.
-            UNIT TESTS:
+            Unit tests:
     ```python
     {python_unit_tests}
     ```
-            RESPONSE:
+            Output from `pytest`:
             ```
             {python_test_results}
             ```
 
-            Modify the source code and unit tests as needed to make all unit tests pass. Return output of the following form:
-            SOURCE CODE: ```<python_source_code>```
+            Modify the source code to pass the failing unit tests. Return a response of the following form:
+            SOURCE CODE: ```<python source code>```
             UNIT TESTS: ```<python unit tests>```
             """
         }
@@ -204,7 +208,7 @@ def iterate(fortran_function, fortran_unit_tests, python_function, python_unit_t
     completion = completion_with_backoff(
         model="gpt-3.5-turbo-16k-0613",
         messages=messages,
-        temperature=0,
+        temperature=temperature,
     )
 
     response = completion.choices[0].message["content"]
@@ -225,18 +229,20 @@ def iterate(fortran_function, fortran_unit_tests, python_function, python_unit_t
     return source_code, unit_tests
 
 
-def generate_python_code(fortran_function):
+def generate_python_code(fortran_function, function_name=""):
+    # Given a Fortran function, translate it into Python, with unit tests for each
 
     filename = ''.join(random.choices(string.ascii_lowercase, k=10))
-    filename = f'./output/translations/{filename}.csv'
-    # Given a Fortran function, translate it into Python, with unit tests for each
+    filename = f'./output/translations/{function_name}_{filename}.csv'
+    logger.info(f"Saving outputs to {filename}")
 
     fortran_unit_tests = _generate_fortran_unit_tests(fortran_function)
     python_unit_tests = _translate_tests_to_python(fortran_unit_tests)
     python_function = _translate_function_to_python(fortran_function)
 
     # TODO: determine what packages we need in the docker image (basic static analysis)
-    python_test_results = testing.run_tests(python_function, python_unit_tests, docker_image="python:3.8")
+    docker_image = "faizanbashir/python-datascience:3.6"
+    python_test_results = testing.run_tests(python_function, python_unit_tests, docker_image=docker_image)
 
 
     i = 0
@@ -255,14 +261,15 @@ def generate_python_code(fortran_function):
 
     utils.save_to_csv(dict, outfile=filename)
 
-    response = input("Would you like to keep going (Y/n)? ")
+    response = input("Would you like to continue (Y/n)? ")
     while response.lower() != "n":
         i += 1
         new_python_function, new_python_unit_tests = iterate(fortran_function=fortran_function,
                                           fortran_unit_tests=fortran_unit_tests,
                                           python_function=python_function,
                                           python_unit_tests=python_unit_tests,
-                                          python_test_results=utils.remove_ansi_escape_codes(python_test_results))
+                                          python_test_results=utils.remove_ansi_escape_codes(python_test_results),
+                                          temperature=0.5)
         
         code_diffs = utils.find_diffs(new_python_function, python_function)
         test_diffs = utils.find_diffs(new_python_unit_tests, python_unit_tests)
@@ -270,7 +277,7 @@ def generate_python_code(fortran_function):
         python_function = new_python_function
         python_unit_tests = new_python_unit_tests
         
-        python_test_results = testing.run_tests(python_function, python_unit_tests, docker_image="python:3.8")
+        python_test_results = testing.run_tests(python_function, python_unit_tests, docker_image=docker_image)
         logger.debug(f"Test results for iteration {i}")
         logger.debug(python_test_results)
 
@@ -286,67 +293,95 @@ def generate_python_code(fortran_function):
 
         utils.save_to_csv(dict, filename)
 
-        response = input("Would you like to keep going (Y/n)? ")
+        response = input("Would you like to continue (Y/n)? ")
 
     logger.info(f"Done. Output saved to {filename}.")
 
 
 if __name__ == "__main__":
-    fortran_function = """
-!-----------------------------------------------------------------------
-elemental real(r8) function daylength(lat, decl)
-    !
-    ! !DESCRIPTION:
-    ! Computes daylength (in seconds)
-    !
-    ! Latitude and solar declination angle should both be specified in radians. decl must
-    ! be strictly less than pi/2; lat must be less than pi/2 within a small tolerance.
-    !
-    ! !USES:
-    use shr_infnan_mod, only : nan => shr_infnan_nan, &
-                            assignment(=)
-    use shr_const_mod , only : SHR_CONST_PI
-    !
-    ! !ARGUMENTS:
-    real(r8), intent(in) :: lat    ! latitude (radians)
-    real(r8), intent(in) :: decl   ! solar declination angle (radians)
-    !
-    ! !LOCAL VARIABLES:
-    real(r8) :: my_lat             ! local version of lat, possibly adjusted slightly
-    real(r8) :: temp               ! temporary variable
 
-    ! number of seconds per radian of hour-angle
-    real(r8), parameter :: secs_per_radian = 13750.9871_r8
+#     fortran_function = """
+# !-----------------------------------------------------------------------
+# elemental real(r8) function daylength(lat, decl)
+#     !
+#     ! !DESCRIPTION:
+#     ! Computes daylength (in seconds)
+#     !
+#     ! Latitude and solar declination angle should both be specified in radians. decl must
+#     ! be strictly less than pi/2; lat must be less than pi/2 within a small tolerance.
+#     !
+#     ! !USES:
+#     use shr_infnan_mod, only : nan => shr_infnan_nan, &
+#                             assignment(=)
+#     use shr_const_mod , only : SHR_CONST_PI
+#     !
+#     ! !ARGUMENTS:
+#     real(r8), intent(in) :: lat    ! latitude (radians)
+#     real(r8), intent(in) :: decl   ! solar declination angle (radians)
+#     !
+#     ! !LOCAL VARIABLES:
+#     real(r8) :: my_lat             ! local version of lat, possibly adjusted slightly
+#     real(r8) :: temp               ! temporary variable
 
-    ! epsilon for defining latitudes "near" the pole
-    real(r8), parameter :: lat_epsilon = 10._r8 * epsilon(1._r8)
+#     ! number of seconds per radian of hour-angle
+#     real(r8), parameter :: secs_per_radian = 13750.9871_r8
 
-    ! Define an offset pole as slightly less than pi/2 to avoid problems with cos(lat) being negative
-    real(r8), parameter :: pole = SHR_CONST_PI/2.0_r8
-    real(r8), parameter :: offset_pole = pole - lat_epsilon
-    !-----------------------------------------------------------------------
+#     ! epsilon for defining latitudes "near" the pole
+#     real(r8), parameter :: lat_epsilon = 10._r8 * epsilon(1._r8)
 
-    ! Can't SHR_ASSERT in an elemental function; instead, return a bad value if any
-    ! preconditions are violated
+#     ! Define an offset pole as slightly less than pi/2 to avoid problems with cos(lat) being negative
+#     real(r8), parameter :: pole = SHR_CONST_PI/2.0_r8
+#     real(r8), parameter :: offset_pole = pole - lat_epsilon
+#     !-----------------------------------------------------------------------
 
-    ! lat must be less than pi/2 within a small tolerance
-    if (abs(lat) >= (pole + lat_epsilon)) then
-    daylength = nan
+#     ! Can't SHR_ASSERT in an elemental function; instead, return a bad value if any
+#     ! preconditions are violated
 
-    ! decl must be strictly less than pi/2
-    else if (abs(decl) >= pole) then
-    daylength = nan
+#     ! lat must be less than pi/2 within a small tolerance
+#     if (abs(lat) >= (pole + lat_epsilon)) then
+#     daylength = nan
 
-    ! normal case
-    else    
-    ! Ensure that latitude isn't too close to pole, to avoid problems with cos(lat) being negative
-    my_lat = min(offset_pole, max(-1._r8 * offset_pole, lat))
+#     ! decl must be strictly less than pi/2
+#     else if (abs(decl) >= pole) then
+#     daylength = nan
 
-    temp = -(sin(my_lat)*sin(decl))/(cos(my_lat) * cos(decl))
-    temp = min(1._r8,max(-1._r8,temp))
-    daylength = 2.0_r8 * secs_per_radian * acos(temp) 
-    end if
+#     ! normal case
+#     else    
+#     ! Ensure that latitude isn't too close to pole, to avoid problems with cos(lat) being negative
+#     my_lat = min(offset_pole, max(-1._r8 * offset_pole, lat))
 
-end function daylength"""
+#     temp = -(sin(my_lat)*sin(decl))/(cos(my_lat) * cos(decl))
+#     temp = min(1._r8,max(-1._r8,temp))
+#     daylength = 2.0_r8 * secs_per_radian * acos(temp) 
+#     end if
+
+# end function daylength"""
+#     fortran_function = """
+# recursive function factorial(n) result(fact)
+#     integer, intent(in) :: n
+#     integer :: fact
+
+#     if (n == 0) then
+#       fact = 1
+#     else
+#       fact = n * factorial(n - 1)
+#     end if
+# end function factorial
+#     """
+    fortran_function = """!N order matrix A, return det(A)
+    real*8 function determinant(A, N)
+        integer,intent(in)::N
+        real*8,dimension(N,N),intent(in)::A
+        integer::i; integer,dimension(N)::ipiv; real*8::sign
+        real*8,dimension(N,N)::Acopy
+        Acopy=A; call dgetrf(N,N,Acopy,N,ipiv,i)
+        if(ipiv(1)==1) then; sign=1d0; else; sign=-1d0; end if
+        determinant=Acopy(1,1)
+        do i=2,N
+            if(ipiv(i)/=i) sign=-sign
+            determinant=determinant*Acopy(i,i)
+        end do
+        determinant=determinant*sign
+    end function determinant"""
     
-    generate_python_code(fortran_function)
+    generate_python_code(fortran_function, function_name="det")
