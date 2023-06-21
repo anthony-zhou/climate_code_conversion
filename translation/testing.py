@@ -2,6 +2,7 @@ import docker
 import tempfile
 import os
 import re
+from utils import logger
 
 
 def _extract_pytest_output(output):
@@ -24,7 +25,7 @@ def _run_tests_in_docker(source_code, docker_image):
     client = docker.from_env()
 
     # Pull the Python Docker image
-    print(f"Pulling Docker image {docker_image}...")
+    logger.debug(f"Pulling Docker image {docker_image}...")
     client.images.pull(docker_image)
 
     test_dir = os.getcwd() + "/tests"
@@ -49,21 +50,22 @@ def _run_tests_in_docker(source_code, docker_image):
         volumes={test_dir: {"bind": f"/tests", "mode": "rw"}},
         working_dir="/tests",
     )
-    print(f"Running tests in Docker container {container.id}...")
-    container.start()
+    logger.debug(f"Running tests in Docker container {container.id}...")
+    container.start() # type: ignore
 
     # Wait for the container to finish and capture the output
-    result = container.wait()
-    output = container.logs()
+    result = container.wait() # type: ignore
+    output = container.logs() # type: ignore
 
     # Clean up
-    container.remove()
+    container.remove() # type: ignore
     os.remove(temp_filename)
 
     return output.decode("utf-8")
 
 
 def run_tests(source_code, unit_tests, docker_image):
+    logger.info(f"Running tests using docker image {docker_image}")
     source_code = source_code + "\n" + unit_tests
     output = _run_tests_in_docker(source_code, docker_image=docker_image)
 
@@ -71,14 +73,3 @@ def run_tests(source_code, unit_tests, docker_image):
 
     return result
 
-
-# if __name__ == "__main__":
-#     source_code = """
-# import numpy as np
-# import pytest
-
-# def test_add():
-#     assert 1 + 1 == 2
-#     """
-#     results = run_tests(source_code, docker_image="python:3.8")
-#     print(results)

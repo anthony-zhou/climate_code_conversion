@@ -42,3 +42,6 @@
 .pytest_cache
 
 .env
+
+# Output files
+output
