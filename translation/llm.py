@@ -430,4 +430,4 @@ end subroutine ci_func
     #     determinant=determinant*sign
     # end function determinant"""
     
-    generate_python_code(fortran_function, function_name="daylength")
+    generate_python_code(fortran_function, function_name="ci_func")

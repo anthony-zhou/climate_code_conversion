@@ -1,5 +1,4 @@
 import numpy as np
-from translation.utils import logger
 
 def ci_func(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c, atm2lnd_inst, photosyns_inst):
     # local variables
