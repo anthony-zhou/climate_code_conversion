@@ -1,12 +1,3 @@
-import pytest
-
-import translation.llm as llm
-import translation.utils as utils
-
-def test_iterate():
-
-    # Define the expected Python function and unit tests
-    python_function = """
 import numpy as np
 
 def ci_func(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c, atm2lnd_inst, photosyns_inst):
@@ -104,8 +95,8 @@ def ci_func(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c, atm2lnd_
     fval = ci - cair + an[p, iv] * forc_pbot[c] * (1.4 * gs_mol + 1.6 * gb_mol) / (gb_mol * gs_mol)
 
     return fval, gs_mol
-    """
-    python_unit_tests = """
+
+
 import pytest
 import numpy as np
 
@@ -152,68 +143,84 @@ def test_ci_func():
 
 def test_ci_func_with_c4_photosynthesis():
     # Similar to the previous test, but with 'c3flag_patch' set to False to test the C4 photosynthesis path
-    # You need to define the mocks for atm2lnd_inst and photosyns_inst similar to the previous test
+    # Define the mocks for atm2lnd_inst and photosyns_inst similar to the previous test
     # but with 'c3flag_patch' set to False
+    atm2lnd_inst = {
+        'forc_pbot_downscaled_col': np.array([1.0])
+    }
+
+    photosyns_inst = {
+        'c3flag_patch': np.array([False]),
+        'itype': np.array([1]),
+        'medlynslope': np.array([1.0]),
+        'medlynintercept': np.array([1.0]),
+        'stomatalcond_mtd': 'stomatalcond_mtd_medlyn2011',
+        'ac_patch': np.zeros((1, 1)),
+        'aj_patch': np.zeros((1, 1)),
+        'ap_patch': np.zeros((1, 1)),
+        'ag_patch': np.zeros((1, 1)),
+        'an_patch': np.zeros((1, 1)),
+        'vcmax_z_patch': np.array([[1.0]]),
+        'cp_patch': np.array([1.0]),
+        'kc_patch': np.array([1.0]),
+        'ko_patch': np.array([1.0]),
+        'qe_patch': np.array([1.0]),
+        'tpu_z_patch': np.array([[1.0]]),
+        'kp_z_patch': np.array([[1.0]]),
+        'bbb_patch': np.array([1.0]),
+        'mbb_patch': np.array([1.0]),
+        'theta_cj': np.array([1.0]),
+        'theta_ip': 1.0,
+        'max_cs': 1.0,
+        'stomatalcond_mtd_medlyn2011': 'stomatalcond_mtd_medlyn2011',
+        'stomatalcond_mtd_bb1987': 'stomatalcond_mtd_bb1987'
+    }
 
     # Call the function with test inputs
+    fval, gs_mol = ci_func(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0, 0, 0, atm2lnd_inst, photosyns_inst)
+
     # Assert the expected outputs
+    assert fval is not None
+    assert gs_mol is not None
 
 def test_ci_func_with_negative_net_photosynthesis():
     # Similar to the previous tests, but with inputs that result in negative net photosynthesis
-    # You need to define the mocks for atm2lnd_inst and photosyns_inst similar to the previous tests
+    # Define the mocks for atm2lnd_inst and photosyns_inst similar to the previous tests
     # but with inputs that result in negative net photosynthesis
+    atm2lnd_inst = {
+        'forc_pbot_downscaled_col': np.array([1.0])
+    }
+
+    photosyns_inst = {
+        'c3flag_patch': np.array([True]),
+        'itype': np.array([1]),
+        'medlynslope': np.array([1.0]),
+        'medlynintercept': np.array([1.0]),
+        'stomatalcond_mtd': 'stomatalcond_mtd_medlyn2011',
+        'ac_patch': np.zeros((1, 1)),
+        'aj_patch': np.zeros((1, 1)),
+        'ap_patch': np.zeros((1, 1)),
+        'ag_patch': np.zeros((1, 1)),
+        'an_patch': np.zeros((1, 1)),
+        'vcmax_z_patch': np.array([[0.0]]),  # Set to 0 to result in negative net photosynthesis
+        'cp_patch': np.array([1.0]),
+        'kc_patch': np.array([1.0]),
+        'ko_patch': np.array([1.0]),
+        'qe_patch': np.array([1.0]),
+        'tpu_z_patch': np.array([[1.0]]),
+        'kp_z_patch': np.array([[1.0]]),
+        'bbb_patch': np.array([1.0]),
+        'mbb_patch': np.array([1.0]),
+        'theta_cj': np.array([1.0]),
+        'theta_ip': 1.0,
+        'max_cs': 1.0,
+        'stomatalcond_mtd_medlyn2011': 'stomatalcond_mtd_medlyn2011',
+        'stomatalcond_mtd_bb1987': 'stomatalcond_mtd_bb1987'
+    }
 
     # Call the function with test inputs
+    fval, gs_mol = ci_func(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0, 0, 0, atm2lnd_inst, photosyns_inst)
+
     # Assert the expected outputs
-    """
-
-    python_test_output = """
-    ============================= test session starts ==============================
-[0m
-platform linux -- Python 3.6.8, pytest-7.0.1, pluggy-1.0.0
-rootdir: /tests
-[1mcollecting ... [0m[1m
-collected 0 items / 1 error                                                    [0m
-
-==================================== ERRORS ====================================
-[31m[1m_______________________ ERROR collecting tmptsl1v0ze.py ________________________[0m
-[31m/usr/lib/python3.6/site-packages/_pytest/python.py:599: in _importtestmodule
-    mod = import_path(self.path, mode=importmode, root=self.config.rootpath)
-/usr/lib/python3.6/site-packages/_pytest/pathlib.py:533: in import_path
-    importlib.import_module(module_name)
-/usr/lib/python3.6/importlib/__init__.py:126: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-<frozen importlib._bootstrap>:994: in _gcd_import
-    ???
-<frozen importlib._bootstrap>:971: in _find_and_load
-    ???
-<frozen importlib._bootstrap>:955: in _find_and_load_unlocked
-    ???
-<frozen importlib._bootstrap>:665: in _load_unlocked
-    ???
-/usr/lib/python3.6/site-packages/_pytest/assertion/rewrite.py:162: in exec_module
-    source_stat, co = _rewrite_test(fn, self.config)
-/usr/lib/python3.6/site-packages/_pytest/assertion/rewrite.py:364: in _rewrite_test
-    tree = ast.parse(source, filename=strfn)
-/usr/lib/python3.6/ast.py:35: in parse
-    return compile(source, filename, mode, PyCF_ONLY_AST)
-E     File "/tests/tmptsl1v0ze.py", line 151
-E       def test_ci_func_with_negative_net_photosynthesis():
-E         ^
-E   IndentationError: expected an indented block[0m
-=========================== short test summary info ============================
-ERROR tmptsl1v0ze.py
-!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
-[31m=============================== [31m[1m1 error[0m[31m in 0.23s[0m[31m ===============================[0m
-    """
-
-
-    # Call the iterate function with the initial Fortran function and unit tests
-    source_code, unit_tests = llm.iterate(python_function, python_unit_tests, python_test_output)
-
-    utils.save_to_csv([{'source_code': source_code, 'unit_tests': unit_tests}], outfile='./iterate_response.csv')
-    
-
-    # Check that the returned source code and unit tests match the expected values
-    assert len(source_code) > 0
-    assert len(unit_tests) > 0
+    assert fval == 0
+    assert gs_mol is None

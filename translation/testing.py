@@ -2,7 +2,7 @@ import docker
 import tempfile
 import os
 import re
-from utils import logger
+from translation.utils import logger
 
 
 def _extract_pytest_output(output):

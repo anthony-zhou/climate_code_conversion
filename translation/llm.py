@@ -4,9 +4,9 @@ import string
 import os
 import dotenv
 
-import testing as testing
-import utils as utils
-from utils import logger
+import translation.testing as testing
+import translation.utils as utils
+from translation.utils import logger
 
 logger.add("llm_outputs.log")
 
