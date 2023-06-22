@@ -48,3 +48,6 @@ output
 
 # VSCode
 .vscode
+
+# Local package files
+*.egg-info

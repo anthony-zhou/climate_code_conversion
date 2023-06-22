@@ -38,7 +38,8 @@ def _run_tests_in_docker(source_code, docker_image):
 
     # Define the commands to run
     commands = f"""
-    pip install pytest numpy
+    pip install pytest numpy jaxlib
+    pip install --upgrade "jax[cpu]"
     pytest {os.path.basename(temp_filename)} 
     """
 
@@ -73,3 +74,23 @@ def run_tests(source_code, unit_tests, docker_image):
 
     return result
 
+
+if __name__ == '__main__':
+    source_code = """
+import jax
+import jax.numpy as jnp
+
+def make_numbers(n=10):
+    x = jnp.arange(n)
+    return x
+"""
+    unit_tests = """
+import pytest
+
+def test_make_numbers():
+    x = make_numbers(10)
+
+    assert len(x) == 10
+"""
+
+    run_tests(source_code, unit_tests, "python:3.8")

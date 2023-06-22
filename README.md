@@ -13,6 +13,14 @@ Assuming you are running Ubuntu:
 
 Once you've installed `pFUnit`, get the absolute path to its installation directory and add it to as an environment variable (e.g. `export PFUNIT_DIR=/home/ubuntu/pFUnit/build/installed`). 
 
+## Set up the import path
+
+Before running scripts, you should also add this library to your path as a local `pip` package (this makes sure that absolute imports like `from translation.utils import logger` will work):
+
+1. In the project directory, run `python -m pip install -e .`
+
+By this point, you should be able to run all code and unit tests in the project!
+
 ### Installing `pFUnit`
 
 `pFUnit` is a testing library for Fortran that is used by CTSM for unit testing. Here's how you install it:
