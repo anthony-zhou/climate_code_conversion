@@ -93,4 +93,5 @@ def test_make_numbers():
     assert len(x) == 10
 """
 
-    run_tests(source_code, unit_tests, "python:3.8")
+    result = run_tests(source_code, unit_tests, "python:3.8")
+    logger.debug(result)
