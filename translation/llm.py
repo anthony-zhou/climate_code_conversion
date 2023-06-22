@@ -99,6 +99,42 @@ def _generate_fortran_unit_tests(source_code):
     return unit_tests
 
 
+
+def _generate_python_tests(python_function: str):
+    logger.info("Generating unit tests based on python code...")
+
+    prompt = f"""
+    Generate unit tests for the following Python function using pytest. No need to import the module under test. ```python\n{python_function}\n```
+    """
+
+    logger.debug(f"PROMPT: {prompt}")
+
+
+    completion = completion_with_backoff(
+        model=model_name,
+        messages=[
+            {
+                "role": "system",
+                "content": """You're a programmer proficient in Python and unit testing. You can write and execute Python code by enclosing it in triple backticks, e.g. ```code goes here```"""
+            },
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ],
+        temperature=0.0,
+    )
+
+    logger.debug(f'COMPLETION: {completion.choices[0].message["content"]}')
+
+    unit_tests = completion.choices[0].message["content"].split("```")[1]
+    unit_tests = unit_tests.replace("python\n", "")
+
+
+    return unit_tests
+
+
+
 def _translate_tests_to_python(unit_tests):
     logger.info("Translating unit tests to Python...")
 
@@ -244,8 +280,9 @@ def generate_python_code(fortran_function, function_name=""):
     logger.info(f"Saving outputs to {filename}")
 
     fortran_unit_tests = _generate_fortran_unit_tests(fortran_function)
-    python_unit_tests = _translate_tests_to_python(fortran_unit_tests)
+    # python_unit_tests = _translate_tests_to_python(fortran_unit_tests)
     python_function = _translate_function_to_python(fortran_function)
+    python_unit_tests = _generate_python_tests(python_function)
 
     # TODO: determine what packages we need in the docker image (basic static analysis)
     docker_image = "faizanbashir/python-datascience:3.6"

@@ -1,0 +1,769 @@
+2023-06-22 02:50:32.625 | INFO     | __main__:generate_python_code:278 - Saving outputs to ./output/translations/daylength_inaclynhvc.csv
+2023-06-22 02:50:32.625 | INFO     | __main__:_generate_fortran_unit_tests:37 - Generating unit tests in Fortran...
+2023-06-22 02:50:32.625 | DEBUG    | __main__:_generate_fortran_unit_tests:80 - PROMPT: 
+    Given fortran code, write unit tests using funit.
+
+    Example:
+    FORTRAN CODE:
+    ```
+    module fac
+        implicit none
+        
+        contains
+
+        recursive function factorial(n) result(fact)
+            integer, intent(in) :: n
+            integer :: fact
+
+            if (n == 0) then
+            fact = 1
+            else
+            fact = n * factorial(n - 1)
+            end if
+        end function factorial
+    end module fac
+    ```
+
+    FORTRAN TESTS:
+    ```
+    @test
+    subroutine test_fac()
+        use funit
+
+        @assertEqual(120, factorial(5), 'factorial(5)')
+        @assertEqual(1, factorial(1), 'factorial(1)')
+        @assertEqual(1, factorial(0), 'factorial(0)')
+
+    end subroutine test_fac
+    ```
+
+    Your turn:
+    FORTRAN CODE:
+```
+
+!-----------------------------------------------------------------------
+elemental real(r8) function daylength(lat, decl)
+    !
+    ! !DESCRIPTION:
+    ! Computes daylength (in seconds)
+    !
+    ! Latitude and solar declination angle should both be specified in radians. decl must
+    ! be strictly less than pi/2; lat must be less than pi/2 within a small tolerance.
+    !
+    ! !USES:
+    use shr_infnan_mod, only : nan => shr_infnan_nan, &
+                            assignment(=)
+    use shr_const_mod , only : SHR_CONST_PI
+    !
+    ! !ARGUMENTS:
+    real(r8), intent(in) :: lat    ! latitude (radians)
+    real(r8), intent(in) :: decl   ! solar declination angle (radians)
+    !
+    ! !LOCAL VARIABLES:
+    real(r8) :: my_lat             ! local version of lat, possibly adjusted slightly
+    real(r8) :: temp               ! temporary variable
+
+    ! number of seconds per radian of hour-angle
+    real(r8), parameter :: secs_per_radian = 13750.9871_r8
+
+    ! epsilon for defining latitudes "near" the pole
+    real(r8), parameter :: lat_epsilon = 10._r8 * epsilon(1._r8)
+
+    ! Define an offset pole as slightly less than pi/2 to avoid problems with cos(lat) being negative
+    real(r8), parameter :: pole = SHR_CONST_PI/2.0_r8
+    real(r8), parameter :: offset_pole = pole - lat_epsilon
+    !-----------------------------------------------------------------------
+
+    ! Can't SHR_ASSERT in an elemental function; instead, return a bad value if any
+    ! preconditions are violated
+
+    ! lat must be less than pi/2 within a small tolerance
+    if (abs(lat) >= (pole + lat_epsilon)) then
+    daylength = nan
+
+    ! decl must be strictly less than pi/2
+    else if (abs(decl) >= pole) then
+    daylength = nan
+
+    ! normal case
+    else    
+    ! Ensure that latitude isn't too close to pole, to avoid problems with cos(lat) being negative
+    my_lat = min(offset_pole, max(-1._r8 * offset_pole, lat))
+
+    temp = -(sin(my_lat)*sin(decl))/(cos(my_lat) * cos(decl))
+    temp = min(1._r8,max(-1._r8,temp))
+    daylength = 2.0_r8 * secs_per_radian * acos(temp) 
+    end if
+
+end function daylength
+```
+
+    FORTRAN TESTS:
+    
+2023-06-22 02:50:47.374 | DEBUG    | __main__:_generate_fortran_unit_tests:94 - COMPLETION: ```
+@test
+subroutine test_daylength()
+    use funit
+    use shr_const_mod , only : SHR_CONST_PI
+
+    @assertEqual(0.0, daylength(SHR_CONST_PI/2.0, 0.0), 'daylength at North Pole during equinox')
+    @assertEqual(0.0, daylength(-SHR_CONST_PI/2.0, 0.0), 'daylength at South Pole during equinox')
+    @assertEqual(86400.0, daylength(0.0, 0.0), 'daylength at Equator during equinox')
+
+end subroutine test_daylength
+```
+This test checks the daylength function at three key points: the North Pole, the South Pole, and the Equator during the equinox. The expected results are 0 seconds of daylight at the poles and 86400 seconds (24 hours) of daylight at the equator.
+2023-06-22 02:50:47.375 | INFO     | __main__:_translate_function_to_python:177 - Translating function to Python...
+2023-06-22 02:50:47.375 | DEBUG    | __main__:_translate_function_to_python:181 - PROMPT: 
+    Convert the following Fortran function to Python. ```
+
+!-----------------------------------------------------------------------
+elemental real(r8) function daylength(lat, decl)
+    !
+    ! !DESCRIPTION:
+    ! Computes daylength (in seconds)
+    !
+    ! Latitude and solar declination angle should both be specified in radians. decl must
+    ! be strictly less than pi/2; lat must be less than pi/2 within a small tolerance.
+    !
+    ! !USES:
+    use shr_infnan_mod, only : nan => shr_infnan_nan, &
+                            assignment(=)
+    use shr_const_mod , only : SHR_CONST_PI
+    !
+    ! !ARGUMENTS:
+    real(r8), intent(in) :: lat    ! latitude (radians)
+    real(r8), intent(in) :: decl   ! solar declination angle (radians)
+    !
+    ! !LOCAL VARIABLES:
+    real(r8) :: my_lat             ! local version of lat, possibly adjusted slightly
+    real(r8) :: temp               ! temporary variable
+
+    ! number of seconds per radian of hour-angle
+    real(r8), parameter :: secs_per_radian = 13750.9871_r8
+
+    ! epsilon for defining latitudes "near" the pole
+    real(r8), parameter :: lat_epsilon = 10._r8 * epsilon(1._r8)
+
+    ! Define an offset pole as slightly less than pi/2 to avoid problems with cos(lat) being negative
+    real(r8), parameter :: pole = SHR_CONST_PI/2.0_r8
+    real(r8), parameter :: offset_pole = pole - lat_epsilon
+    !-----------------------------------------------------------------------
+
+    ! Can't SHR_ASSERT in an elemental function; instead, return a bad value if any
+    ! preconditions are violated
+
+    ! lat must be less than pi/2 within a small tolerance
+    if (abs(lat) >= (pole + lat_epsilon)) then
+    daylength = nan
+
+    ! decl must be strictly less than pi/2
+    else if (abs(decl) >= pole) then
+    daylength = nan
+
+    ! normal case
+    else    
+    ! Ensure that latitude isn't too close to pole, to avoid problems with cos(lat) being negative
+    my_lat = min(offset_pole, max(-1._r8 * offset_pole, lat))
+
+    temp = -(sin(my_lat)*sin(decl))/(cos(my_lat) * cos(decl))
+    temp = min(1._r8,max(-1._r8,temp))
+    daylength = 2.0_r8 * secs_per_radian * acos(temp) 
+    end if
+
+end function daylength```
+
+    
+2023-06-22 02:51:19.266 | DEBUG    | __main__:_translate_function_to_python:198 - COMPLETION: Here is the Python version of the Fortran function:
+
+```python
+import math
+import numpy as np
+
+def daylength(lat, decl):
+    """
+    Computes daylength (in seconds)
+
+    Latitude and solar declination angle should both be specified in radians. decl must
+    be strictly less than pi/2; lat must be less than pi/2 within a small tolerance.
+    """
+
+    # number of seconds per radian of hour-angle
+    secs_per_radian = 13750.9871
+
+    # epsilon for defining latitudes "near" the pole
+    lat_epsilon = 10 * np.finfo(float).eps
+
+    # Define an offset pole as slightly less than pi/2 to avoid problems with cos(lat) being negative
+    pole = math.pi / 2.0
+    offset_pole = pole - lat_epsilon
+
+    # lat must be less than pi/2 within a small tolerance
+    if abs(lat) >= (pole + lat_epsilon):
+        return np.nan
+
+    # decl must be strictly less than pi/2
+    elif abs(decl) >= pole:
+        return np.nan
+
+    # normal case
+    else:
+        # Ensure that latitude isn't too close to pole, to avoid problems with cos(lat) being negative
+        my_lat = min(offset_pole, max(-1.0 * offset_pole, lat))
+
+        temp = -(math.sin(my_lat)*math.sin(decl))/(math.cos(my_lat) * math.cos(decl))
+        temp = min(1.0, max(-1.0, temp))
+        return 2.0 * secs_per_radian * math.acos(temp)
+```
+
+This Python function should behave the same as the Fortran function. It uses the `math` module for mathematical operations and the `numpy` module for the machine epsilon and NaN values.
+2023-06-22 02:51:19.266 | INFO     | __main__:_generate_python_tests:104 - Generating unit tests based on python code...
+2023-06-22 02:51:19.266 | DEBUG    | __main__:_generate_python_tests:110 - PROMPT: 
+    Generate unit tests for the following Python function using pytest. No need to import the module under test. ```python
+import math
+import numpy as np
+
+def daylength(lat, decl):
+    """
+    Computes daylength (in seconds)
+
+    Latitude and solar declination angle should both be specified in radians. decl must
+    be strictly less than pi/2; lat must be less than pi/2 within a small tolerance.
+    """
+
+    # number of seconds per radian of hour-angle
+    secs_per_radian = 13750.9871
+
+    # epsilon for defining latitudes "near" the pole
+    lat_epsilon = 10 * np.finfo(float).eps
+
+    # Define an offset pole as slightly less than pi/2 to avoid problems with cos(lat) being negative
+    pole = math.pi / 2.0
+    offset_pole = pole - lat_epsilon
+
+    # lat must be less than pi/2 within a small tolerance
+    if abs(lat) >= (pole + lat_epsilon):
+        return np.nan
+
+    # decl must be strictly less than pi/2
+    elif abs(decl) >= pole:
+        return np.nan
+
+    # normal case
+    else:
+        # Ensure that latitude isn't too close to pole, to avoid problems with cos(lat) being negative
+        my_lat = min(offset_pole, max(-1.0 * offset_pole, lat))
+
+        temp = -(math.sin(my_lat)*math.sin(decl))/(math.cos(my_lat) * math.cos(decl))
+        temp = min(1.0, max(-1.0, temp))
+        return 2.0 * secs_per_radian * math.acos(temp)
+
+```
+    
+2023-06-22 02:51:43.758 | DEBUG    | __main__:_generate_python_tests:128 - COMPLETION: Sure, here are some unit tests for the `daylength` function using pytest:
+
+```python
+import pytest
+import math
+import numpy as np
+
+def test_daylength_normal_case():
+    lat = math.radians(45)  # 45 degrees in radians
+    decl = math.radians(23.5)  # 23.5 degrees in radians
+    result = daylength(lat, decl)
+    assert isinstance(result, float)
+    assert result > 0
+
+def test_daylength_lat_too_large():
+    lat = math.pi  # pi radians is 180 degrees, which is too large
+    decl = math.radians(23.5)  # 23.5 degrees in radians
+    result = daylength(lat, decl)
+    assert math.isnan(result)
+
+def test_daylength_decl_too_large():
+    lat = math.radians(45)  # 45 degrees in radians
+    decl = math.pi  # pi radians is 180 degrees, which is too large
+    result = daylength(lat, decl)
+    assert math.isnan(result)
+
+def test_daylength_lat_near_pole():
+    lat = math.pi / 2  # pi/2 radians is 90 degrees, which is near the pole
+    decl = math.radians(23.5)  # 23.5 degrees in radians
+    result = daylength(lat, decl)
+    assert isinstance(result, float)
+    assert result > 0
+
+def test_daylength_decl_near_pole():
+    lat = math.radians(45)  # 45 degrees in radians
+    decl = math.pi / 2  # pi/2 radians is 90 degrees, which is near the pole
+    result = daylength(lat, decl)
+    assert math.isnan(result)
+```
+
+These tests cover the normal case, the case where `lat` is too large, the case where `decl` is too large, the case where `lat` is near the pole, and the case where `decl` is near the pole.
+2023-06-22 02:51:43.758 | INFO     | testing:run_tests:68 - Running tests using docker image faizanbashir/python-datascience:3.6
+2023-06-22 02:51:43.764 | DEBUG    | testing:_run_tests_in_docker:28 - Pulling Docker image faizanbashir/python-datascience:3.6...
+2023-06-22 02:51:43.894 | DEBUG    | testing:_run_tests_in_docker:53 - Running tests in Docker container 2d43ff1e326b443a66f00b2b607a2a425e9e79afdb44f46010467852bf0b1050...
+2023-06-22 02:51:47.350 | DEBUG    | __main__:generate_python_code:301 - Test results for iteration 0
+2023-06-22 02:51:47.350 | DEBUG    | __main__:generate_python_code:302 - ============================= test session starts ==============================
+[0m
+platform linux -- Python 3.6.8, pytest-7.0.1, pluggy-1.0.0
+rootdir: /tests
+[1mcollecting ... [0m[1mcollected 0 items / 1 error                                                    [0m
+
+==================================== ERRORS ====================================
+[31m[1m_______________________ ERROR collecting tmp7tc604bd.py ________________________[0m
+[1m[31mtmp7tc604bd.py[0m:39: in <module>
+    python
+[1m[31mE   NameError: name 'python' is not defined[0m
+=========================== short test summary info ============================
+ERROR tmp7tc604bd.py - NameError: name 'python' is not defined
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+[31m=============================== [31m[1m1 error[0m[31m in 0.21s[0m[31m ===============================[0m
+
+2023-06-22 02:52:10.289 | DEBUG    | __main__:iterate:248 - [{'role': 'system', 'content': "You're a programmer proficient in Fortran and Python. You can write and execute Python code by enclosing it in triple backticks, e.g. ```code goes here```.\n            When prompted to fix source code and unit tests, always return a response of the form:\n            SOURCE CODE: ```<python source code>```\n            UNIT TESTS: ```<python unit tests>```. Do not return any additional context.\n            "}, {'role': 'user', 'content': '\n            Function being tested:\n            ```python\nimport math\nimport numpy as np\n\ndef daylength(lat, decl):\n    """\n    Computes daylength (in seconds)\n\n    Latitude and solar declination angle should both be specified in radians. decl must\n    be strictly less than pi/2; lat must be less than pi/2 within a small tolerance.\n    """\n\n    # number of seconds per radian of hour-angle\n    secs_per_radian = 13750.9871\n\n    # epsilon for defining latitudes "near" the pole\n    lat_epsilon = 10 * np.finfo(float).eps\n\n    # Define an offset pole as slightly less than pi/2 to avoid problems with cos(lat) being negative\n    pole = math.pi / 2.0\n    offset_pole = pole - lat_epsilon\n\n    # lat must be less than pi/2 within a small tolerance\n    if abs(lat) >= (pole + lat_epsilon):\n        return np.nan\n\n    # decl must be strictly less than pi/2\n    elif abs(decl) >= pole:\n        return np.nan\n\n    # normal case\n    else:\n        # Ensure that latitude isn\'t too close to pole, to avoid problems with cos(lat) being negative\n        my_lat = min(offset_pole, max(-1.0 * offset_pole, lat))\n\n        temp = -(math.sin(my_lat)*math.sin(decl))/(math.cos(my_lat) * math.cos(decl))\n        temp = min(1.0, max(-1.0, temp))\n        return 2.0 * secs_per_radian * math.acos(temp)\n\n\n            Here are some unit tests for the above code and the corresponding output.\n            Unit tests:\n    ```python\n    python\nimport pytest\nimport math\nimport numpy as np\n\ndef test_daylength_normal_case():\n    lat = math.radians(45)  # 45 degrees in radians\n    decl = math.radians(23.5)  # 23.5 degrees in radians\n    result = daylength(lat, decl)\n    assert isinstance(result, float)\n    assert result > 0\n\ndef test_daylength_lat_too_large():\n    lat = math.pi  # pi radians is 180 degrees, which is too large\n    decl = math.radians(23.5)  # 23.5 degrees in radians\n    result = daylength(lat, decl)\n    assert math.isnan(result)\n\ndef test_daylength_decl_too_large():\n    lat = math.radians(45)  # 45 degrees in radians\n    decl = math.pi  # pi radians is 180 degrees, which is too large\n    result = daylength(lat, decl)\n    assert math.isnan(result)\n\ndef test_daylength_lat_near_pole():\n    lat = math.pi / 2  # pi/2 radians is 90 degrees, which is near the pole\n    decl = math.radians(23.5)  # 23.5 degrees in radians\n    result = daylength(lat, decl)\n    assert isinstance(result, float)\n    assert result > 0\n\ndef test_daylength_decl_near_pole():\n    lat = math.radians(45)  # 45 degrees in radians\n    decl = math.pi / 2  # pi/2 radians is 90 degrees, which is near the pole\n    result = daylength(lat, decl)\n    assert math.isnan(result)\n\n    ```\n            Output from `pytest`:\n            ```\n            ============================= test session starts ==============================\n\r\nplatform linux -- Python 3.6.8, pytest-7.0.1, pluggy-1.0.0\r\nrootdir: /tests\r\ncollecting ... \rcollected 0 items / 1 error                                                    \r\n\r\n==================================== ERRORS ====================================\r\n_______________________ ERROR collecting tmp7tc604bd.py ________________________\r\ntmp7tc604bd.py:39: in <module>\r\n    python\r\nE   NameError: name \'python\' is not defined\r\n=========================== short test summary info ============================\r\nERROR tmp7tc604bd.py - NameError: name \'python\' is not defined\r\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\r\n=============================== 1 error in 0.21s ===============================\r\n\n            ```\n\n            Modify the source code to pass the failing unit tests. Return a response of the following form:\n            SOURCE CODE: ```<python source code>```\n            UNIT TESTS: ```<python unit tests>```\n            '}]
+2023-06-22 02:52:38.592 | DEBUG    | __main__:iterate:256 - RESPONSE:
+The source code does not need any modification. The error is coming from the unit tests. The word "python" is not needed before the import statements. It is causing a "NameError". Here are the corrected unit tests:
+
+UNIT TESTS: 
+```python
+import pytest
+import math
+import numpy as np
+
+def test_daylength_normal_case():
+    lat = math.radians(45)  # 45 degrees in radians
+    decl = math.radians(23.5)  # 23.5 degrees in radians
+    result = daylength(lat, decl)
+    assert isinstance(result, float)
+    assert result > 0
+
+def test_daylength_lat_too_large():
+    lat = math.pi  # pi radians is 180 degrees, which is too large
+    decl = math.radians(23.5)  # 23.5 degrees in radians
+    result = daylength(lat, decl)
+    assert math.isnan(result)
+
+def test_daylength_decl_too_large():
+    lat = math.radians(45)  # 45 degrees in radians
+    decl = math.pi  # pi radians is 180 degrees, which is too large
+    result = daylength(lat, decl)
+    assert math.isnan(result)
+
+def test_daylength_lat_near_pole():
+    lat = math.pi / 2  # pi/2 radians is 90 degrees, which is near the pole
+    decl = math.radians(23.5)  # 23.5 degrees in radians
+    result = daylength(lat, decl)
+    assert isinstance(result, float)
+    assert result > 0
+
+def test_daylength_decl_near_pole():
+    lat = math.radians(45)  # 45 degrees in radians
+    decl = math.pi / 2  # pi/2 radians is 90 degrees, which is near the pole
+    result = daylength(lat, decl)
+    assert math.isnan(result)
+```
+2023-06-22 02:52:38.593 | INFO     | testing:run_tests:68 - Running tests using docker image faizanbashir/python-datascience:3.6
+2023-06-22 02:52:38.599 | DEBUG    | testing:_run_tests_in_docker:28 - Pulling Docker image faizanbashir/python-datascience:3.6...
+2023-06-22 02:52:38.734 | DEBUG    | testing:_run_tests_in_docker:53 - Running tests in Docker container 3f5be690cb150abef05e00183d6c0b95471a64fe304e28ff81cd22937e247dd5...
+2023-06-22 02:52:41.717 | DEBUG    | __main__:generate_python_code:323 - Test results for iteration 1
+2023-06-22 02:52:41.717 | DEBUG    | __main__:generate_python_code:324 - ============================= test session starts ==============================
+[0m
+platform linux -- Python 3.6.8, pytest-7.0.1, pluggy-1.0.0
+rootdir: /tests
+[1mcollecting ... [0m[1mcollected 0 items / 1 error                                                    [0m
+
+==================================== ERRORS ====================================
+[31m[1m_______________________ ERROR collecting tmppzbrnixv.py ________________________[0m
+[31m/usr/lib/python3.6/site-packages/_pytest/python.py:599: in _importtestmodule
+    mod = import_path(self.path, mode=importmode, root=self.config.rootpath)
+/usr/lib/python3.6/site-packages/_pytest/pathlib.py:533: in import_path
+    importlib.import_module(module_name)
+/usr/lib/python3.6/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+<frozen importlib._bootstrap>:994: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:971: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:955: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:665: in _load_unlocked
+    ???
+/usr/lib/python3.6/site-packages/_pytest/assertion/rewrite.py:162: in exec_module
+    source_stat, co = _rewrite_test(fn, self.config)
+/usr/lib/python3.6/site-packages/_pytest/assertion/rewrite.py:364: in _rewrite_test
+    tree = ast.parse(source, filename=strfn)
+/usr/lib/python3.6/ast.py:35: in parse
+    return compile(source, filename, mode, PyCF_ONLY_AST)
+E     File "/tests/tmppzbrnixv.py", line 37
+E       e source code does not need any modification. The error is coming from the unit tests. The word "python" is not needed before the import statements. It is causing a "NameError". Here are the corrected unit tests:
+E              ^
+E   SyntaxError: invalid syntax[0m
+=========================== short test summary info ============================
+ERROR tmppzbrnixv.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+[31m=============================== [31m[1m1 error[0m[31m in 0.22s[0m[31m ===============================[0m
+
+2023-06-22 02:52:59.994 | INFO     | __main__:generate_python_code:340 - Done. Output saved to ./output/translations/daylength_inaclynhvc.csv.
+2023-06-22 02:53:16.389 | INFO     | __main__:generate_python_code:280 - Saving outputs to ./output/translations/daylength_xxjyrfvggi.csv
+2023-06-22 02:53:16.389 | INFO     | __main__:_generate_fortran_unit_tests:37 - Generating unit tests in Fortran...
+2023-06-22 02:53:16.389 | DEBUG    | __main__:_generate_fortran_unit_tests:80 - PROMPT: 
+    Given fortran code, write unit tests using funit.
+
+    Example:
+    FORTRAN CODE:
+    ```
+    module fac
+        implicit none
+        
+        contains
+
+        recursive function factorial(n) result(fact)
+            integer, intent(in) :: n
+            integer :: fact
+
+            if (n == 0) then
+            fact = 1
+            else
+            fact = n * factorial(n - 1)
+            end if
+        end function factorial
+    end module fac
+    ```
+
+    FORTRAN TESTS:
+    ```
+    @test
+    subroutine test_fac()
+        use funit
+
+        @assertEqual(120, factorial(5), 'factorial(5)')
+        @assertEqual(1, factorial(1), 'factorial(1)')
+        @assertEqual(1, factorial(0), 'factorial(0)')
+
+    end subroutine test_fac
+    ```
+
+    Your turn:
+    FORTRAN CODE:
+```
+
+!-----------------------------------------------------------------------
+elemental real(r8) function daylength(lat, decl)
+    !
+    ! !DESCRIPTION:
+    ! Computes daylength (in seconds)
+    !
+    ! Latitude and solar declination angle should both be specified in radians. decl must
+    ! be strictly less than pi/2; lat must be less than pi/2 within a small tolerance.
+    !
+    ! !USES:
+    use shr_infnan_mod, only : nan => shr_infnan_nan, &
+                            assignment(=)
+    use shr_const_mod , only : SHR_CONST_PI
+    !
+    ! !ARGUMENTS:
+    real(r8), intent(in) :: lat    ! latitude (radians)
+    real(r8), intent(in) :: decl   ! solar declination angle (radians)
+    !
+    ! !LOCAL VARIABLES:
+    real(r8) :: my_lat             ! local version of lat, possibly adjusted slightly
+    real(r8) :: temp               ! temporary variable
+
+    ! number of seconds per radian of hour-angle
+    real(r8), parameter :: secs_per_radian = 13750.9871_r8
+
+    ! epsilon for defining latitudes "near" the pole
+    real(r8), parameter :: lat_epsilon = 10._r8 * epsilon(1._r8)
+
+    ! Define an offset pole as slightly less than pi/2 to avoid problems with cos(lat) being negative
+    real(r8), parameter :: pole = SHR_CONST_PI/2.0_r8
+    real(r8), parameter :: offset_pole = pole - lat_epsilon
+    !-----------------------------------------------------------------------
+
+    ! Can't SHR_ASSERT in an elemental function; instead, return a bad value if any
+    ! preconditions are violated
+
+    ! lat must be less than pi/2 within a small tolerance
+    if (abs(lat) >= (pole + lat_epsilon)) then
+    daylength = nan
+
+    ! decl must be strictly less than pi/2
+    else if (abs(decl) >= pole) then
+    daylength = nan
+
+    ! normal case
+    else    
+    ! Ensure that latitude isn't too close to pole, to avoid problems with cos(lat) being negative
+    my_lat = min(offset_pole, max(-1._r8 * offset_pole, lat))
+
+    temp = -(sin(my_lat)*sin(decl))/(cos(my_lat) * cos(decl))
+    temp = min(1._r8,max(-1._r8,temp))
+    daylength = 2.0_r8 * secs_per_radian * acos(temp) 
+    end if
+
+end function daylength
+```
+
+    FORTRAN TESTS:
+    
+2023-06-22 02:53:29.396 | DEBUG    | __main__:_generate_fortran_unit_tests:94 - COMPLETION: ```
+@test
+subroutine test_daylength()
+    use funit
+    use shr_const_mod , only : SHR_CONST_PI
+
+    @assertEqual(0.0_r8, daylength(SHR_CONST_PI/2.0_r8, 0.0_r8), 'daylength at North Pole during Equinox')
+    @assertEqual(0.0_r8, daylength(-SHR_CONST_PI/2.0_r8, 0.0_r8), 'daylength at South Pole during Equinox')
+    @assertEqual(86400.0_r8, daylength(0.0_r8, 0.0_r8), 'daylength at Equator during Equinox')
+
+end subroutine test_daylength
+```
+2023-06-22 02:53:29.397 | INFO     | __main__:_translate_function_to_python:179 - Translating function to Python...
+2023-06-22 02:53:29.397 | DEBUG    | __main__:_translate_function_to_python:183 - PROMPT: 
+    Convert the following Fortran function to Python. ```
+
+!-----------------------------------------------------------------------
+elemental real(r8) function daylength(lat, decl)
+    !
+    ! !DESCRIPTION:
+    ! Computes daylength (in seconds)
+    !
+    ! Latitude and solar declination angle should both be specified in radians. decl must
+    ! be strictly less than pi/2; lat must be less than pi/2 within a small tolerance.
+    !
+    ! !USES:
+    use shr_infnan_mod, only : nan => shr_infnan_nan, &
+                            assignment(=)
+    use shr_const_mod , only : SHR_CONST_PI
+    !
+    ! !ARGUMENTS:
+    real(r8), intent(in) :: lat    ! latitude (radians)
+    real(r8), intent(in) :: decl   ! solar declination angle (radians)
+    !
+    ! !LOCAL VARIABLES:
+    real(r8) :: my_lat             ! local version of lat, possibly adjusted slightly
+    real(r8) :: temp               ! temporary variable
+
+    ! number of seconds per radian of hour-angle
+    real(r8), parameter :: secs_per_radian = 13750.9871_r8
+
+    ! epsilon for defining latitudes "near" the pole
+    real(r8), parameter :: lat_epsilon = 10._r8 * epsilon(1._r8)
+
+    ! Define an offset pole as slightly less than pi/2 to avoid problems with cos(lat) being negative
+    real(r8), parameter :: pole = SHR_CONST_PI/2.0_r8
+    real(r8), parameter :: offset_pole = pole - lat_epsilon
+    !-----------------------------------------------------------------------
+
+    ! Can't SHR_ASSERT in an elemental function; instead, return a bad value if any
+    ! preconditions are violated
+
+    ! lat must be less than pi/2 within a small tolerance
+    if (abs(lat) >= (pole + lat_epsilon)) then
+    daylength = nan
+
+    ! decl must be strictly less than pi/2
+    else if (abs(decl) >= pole) then
+    daylength = nan
+
+    ! normal case
+    else    
+    ! Ensure that latitude isn't too close to pole, to avoid problems with cos(lat) being negative
+    my_lat = min(offset_pole, max(-1._r8 * offset_pole, lat))
+
+    temp = -(sin(my_lat)*sin(decl))/(cos(my_lat) * cos(decl))
+    temp = min(1._r8,max(-1._r8,temp))
+    daylength = 2.0_r8 * secs_per_radian * acos(temp) 
+    end if
+
+end function daylength```
+
+    
+2023-06-22 02:53:58.407 | DEBUG    | __main__:_translate_function_to_python:200 - COMPLETION: Here is the Python version of the Fortran function:
+
+```python
+import math
+import numpy as np
+
+def daylength(lat, decl):
+    """
+    Computes daylength (in seconds)
+
+    Latitude and solar declination angle should both be specified in radians. decl must
+    be strictly less than pi/2; lat must be less than pi/2 within a small tolerance.
+    """
+
+    # number of seconds per radian of hour-angle
+    secs_per_radian = 13750.9871
+
+    # epsilon for defining latitudes "near" the pole
+    lat_epsilon = 10 * np.finfo(float).eps
+
+    # Define an offset pole as slightly less than pi/2 to avoid problems with cos(lat) being negative
+    pole = math.pi / 2.0
+    offset_pole = pole - lat_epsilon
+
+    # lat must be less than pi/2 within a small tolerance
+    if abs(lat) >= (pole + lat_epsilon):
+        return np.nan
+
+    # decl must be strictly less than pi/2
+    elif abs(decl) >= pole:
+        return np.nan
+
+    # normal case
+    else:
+        # Ensure that latitude isn't too close to pole, to avoid problems with cos(lat) being negative
+        my_lat = min(offset_pole, max(-1.0 * offset_pole, lat))
+
+        temp = -(math.sin(my_lat)*math.sin(decl))/(math.cos(my_lat) * math.cos(decl))
+        temp = min(1.0, max(-1.0, temp))
+        return 2.0 * secs_per_radian * math.acos(temp)
+```
+
+This Python function should behave the same as the Fortran function. It uses the `math` module for mathematical operations and the `numpy` module for the machine epsilon and NaN values.
+2023-06-22 02:53:58.408 | INFO     | __main__:_generate_python_tests:104 - Generating unit tests based on python code...
+2023-06-22 02:53:58.408 | DEBUG    | __main__:_generate_python_tests:110 - PROMPT: 
+    Generate unit tests for the following Python function using pytest. No need to import the module under test. ```python
+import math
+import numpy as np
+
+def daylength(lat, decl):
+    """
+    Computes daylength (in seconds)
+
+    Latitude and solar declination angle should both be specified in radians. decl must
+    be strictly less than pi/2; lat must be less than pi/2 within a small tolerance.
+    """
+
+    # number of seconds per radian of hour-angle
+    secs_per_radian = 13750.9871
+
+    # epsilon for defining latitudes "near" the pole
+    lat_epsilon = 10 * np.finfo(float).eps
+
+    # Define an offset pole as slightly less than pi/2 to avoid problems with cos(lat) being negative
+    pole = math.pi / 2.0
+    offset_pole = pole - lat_epsilon
+
+    # lat must be less than pi/2 within a small tolerance
+    if abs(lat) >= (pole + lat_epsilon):
+        return np.nan
+
+    # decl must be strictly less than pi/2
+    elif abs(decl) >= pole:
+        return np.nan
+
+    # normal case
+    else:
+        # Ensure that latitude isn't too close to pole, to avoid problems with cos(lat) being negative
+        my_lat = min(offset_pole, max(-1.0 * offset_pole, lat))
+
+        temp = -(math.sin(my_lat)*math.sin(decl))/(math.cos(my_lat) * math.cos(decl))
+        temp = min(1.0, max(-1.0, temp))
+        return 2.0 * secs_per_radian * math.acos(temp)
+
+```
+    
+2023-06-22 02:54:30.676 | DEBUG    | __main__:_generate_python_tests:128 - COMPLETION: Sure, here are some unit tests for the `daylength` function using pytest:
+
+```python
+import pytest
+import math
+import numpy as np
+
+def test_daylength_normal_case():
+    lat = math.radians(45)  # 45 degrees in radians
+    decl = math.radians(23.5)  # 23.5 degrees in radians
+    result = daylength(lat, decl)
+    assert isinstance(result, float)
+    assert result > 0
+
+def test_daylength_lat_too_large():
+    lat = math.pi / 2 + 0.1  # too large latitude
+    decl = math.radians(23.5)  # 23.5 degrees in radians
+    result = daylength(lat, decl)
+    assert np.isnan(result)
+
+def test_daylength_decl_too_large():
+    lat = math.radians(45)  # 45 degrees in radians
+    decl = math.pi / 2  # too large declination
+    result = daylength(lat, decl)
+    assert np.isnan(result)
+
+def test_daylength_lat_near_pole():
+    lat = math.pi / 2 - 1e-10  # latitude near the pole
+    decl = math.radians(23.5)  # 23.5 degrees in radians
+    result = daylength(lat, decl)
+    assert isinstance(result, float)
+    assert result > 0
+
+def test_daylength_negative_lat():
+    lat = -math.radians(45)  # -45 degrees in radians
+    decl = math.radians(23.5)  # 23.5 degrees in radians
+    result = daylength(lat, decl)
+    assert isinstance(result, float)
+    assert result > 0
+```
+
+These tests cover the normal case, the case where latitude is too large, the case where declination is too large, the case where latitude is near the pole, and the case where latitude is negative.
+2023-06-22 02:54:30.676 | INFO     | testing:run_tests:68 - Running tests using docker image faizanbashir/python-datascience:3.6
+2023-06-22 02:54:30.683 | DEBUG    | testing:_run_tests_in_docker:28 - Pulling Docker image faizanbashir/python-datascience:3.6...
+2023-06-22 02:54:30.805 | DEBUG    | testing:_run_tests_in_docker:53 - Running tests in Docker container eb33d652a84f33c49109cba3c49bf32fda6e6a9e415ec6e37d8693c826129ad3...
+2023-06-22 02:54:34.120 | DEBUG    | __main__:generate_python_code:303 - Test results for iteration 0
+2023-06-22 02:54:34.121 | DEBUG    | __main__:generate_python_code:304 - ============================= test session starts ==============================
+[0m
+platform linux -- Python 3.6.8, pytest-7.0.1, pluggy-1.0.0
+rootdir: /tests
+[1mcollecting ... [0m[1mcollected 5 items                                                              [0m
+
+tmpgbo5s_0g.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                                     [100%][0m
+
+[32m============================== [32m[1m5 passed[0m[32m in 0.10s[0m[32m ===============================[0m
+
+2023-06-22 02:55:45.324 | DEBUG    | __main__:iterate:250 - [{'role': 'system', 'content': "You're a programmer proficient in Fortran and Python. You can write and execute Python code by enclosing it in triple backticks, e.g. ```code goes here```.\n            When prompted to fix source code and unit tests, always return a response of the form:\n            SOURCE CODE: ```<python source code>```\n            UNIT TESTS: ```<python unit tests>```. Do not return any additional context.\n            "}, {'role': 'user', 'content': '\n            Function being tested:\n            ```python\nimport math\nimport numpy as np\n\ndef daylength(lat, decl):\n    """\n    Computes daylength (in seconds)\n\n    Latitude and solar declination angle should both be specified in radians. decl must\n    be strictly less than pi/2; lat must be less than pi/2 within a small tolerance.\n    """\n\n    # number of seconds per radian of hour-angle\n    secs_per_radian = 13750.9871\n\n    # epsilon for defining latitudes "near" the pole\n    lat_epsilon = 10 * np.finfo(float).eps\n\n    # Define an offset pole as slightly less than pi/2 to avoid problems with cos(lat) being negative\n    pole = math.pi / 2.0\n    offset_pole = pole - lat_epsilon\n\n    # lat must be less than pi/2 within a small tolerance\n    if abs(lat) >= (pole + lat_epsilon):\n        return np.nan\n\n    # decl must be strictly less than pi/2\n    elif abs(decl) >= pole:\n        return np.nan\n\n    # normal case\n    else:\n        # Ensure that latitude isn\'t too close to pole, to avoid problems with cos(lat) being negative\n        my_lat = min(offset_pole, max(-1.0 * offset_pole, lat))\n\n        temp = -(math.sin(my_lat)*math.sin(decl))/(math.cos(my_lat) * math.cos(decl))\n        temp = min(1.0, max(-1.0, temp))\n        return 2.0 * secs_per_radian * math.acos(temp)\n\n\n            Here are some unit tests for the above code and the corresponding output.\n            Unit tests:\n    ```python\n    import pytest\nimport math\nimport numpy as np\n\ndef test_daylength_normal_case():\n    lat = math.radians(45)  # 45 degrees in radians\n    decl = math.radians(23.5)  # 23.5 degrees in radians\n    result = daylength(lat, decl)\n    assert isinstance(result, float)\n    assert result > 0\n\ndef test_daylength_lat_too_large():\n    lat = math.pi / 2 + 0.1  # too large latitude\n    decl = math.radians(23.5)  # 23.5 degrees in radians\n    result = daylength(lat, decl)\n    assert np.isnan(result)\n\ndef test_daylength_decl_too_large():\n    lat = math.radians(45)  # 45 degrees in radians\n    decl = math.pi / 2  # too large declination\n    result = daylength(lat, decl)\n    assert np.isnan(result)\n\ndef test_daylength_lat_near_pole():\n    lat = math.pi / 2 - 1e-10  # latitude near the pole\n    decl = math.radians(23.5)  # 23.5 degrees in radians\n    result = daylength(lat, decl)\n    assert isinstance(result, float)\n    assert result > 0\n\ndef test_daylength_negative_lat():\n    lat = -math.radians(45)  # -45 degrees in radians\n    decl = math.radians(23.5)  # 23.5 degrees in radians\n    result = daylength(lat, decl)\n    assert isinstance(result, float)\n    assert result > 0\n\n    ```\n            Output from `pytest`:\n            ```\n            ============================= test session starts ==============================\n\r\nplatform linux -- Python 3.6.8, pytest-7.0.1, pluggy-1.0.0\r\nrootdir: /tests\r\ncollecting ... \rcollected 5 items                                                              \r\n\r\ntmpgbo5s_0g.py .....                                                     [100%]\r\n\r\n============================== 5 passed in 0.10s ===============================\r\n\n            ```\n\n            Modify the source code to pass the failing unit tests. Return a response of the following form:\n            SOURCE CODE: ```<python source code>```\n            UNIT TESTS: ```<python unit tests>```\n            '}]
+2023-06-22 02:55:48.820 | DEBUG    | __main__:iterate:258 - RESPONSE:
+The provided information indicates that all the unit tests are passing successfully. Therefore, there is no need to modify the source code or the unit tests.
+2023-06-22 02:55:48.821 | INFO     | testing:run_tests:68 - Running tests using docker image faizanbashir/python-datascience:3.6
+2023-06-22 02:55:48.827 | DEBUG    | testing:_run_tests_in_docker:28 - Pulling Docker image faizanbashir/python-datascience:3.6...
+2023-06-22 02:55:48.945 | DEBUG    | testing:_run_tests_in_docker:53 - Running tests in Docker container db78bc73dbe8ee9d0b01b9929740a28896ecbadeec301dfdf7fa3be568260d81...
+2023-06-22 02:55:52.029 | DEBUG    | __main__:generate_python_code:325 - Test results for iteration 1
+2023-06-22 02:55:52.029 | DEBUG    | __main__:generate_python_code:326 - ============================= test session starts ==============================
+[0m
+platform linux -- Python 3.6.8, pytest-7.0.1, pluggy-1.0.0
+rootdir: /tests
+[1mcollecting ... [0m[1mcollected 0 items / 1 error                                                    [0m
+
+==================================== ERRORS ====================================
+[31m[1m_______________________ ERROR collecting tmp292qpw9w.py ________________________[0m
+[31m/usr/lib/python3.6/site-packages/_pytest/python.py:599: in _importtestmodule
+    mod = import_path(self.path, mode=importmode, root=self.config.rootpath)
+/usr/lib/python3.6/site-packages/_pytest/pathlib.py:533: in import_path
+    importlib.import_module(module_name)
+/usr/lib/python3.6/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+<frozen importlib._bootstrap>:994: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:971: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:955: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:665: in _load_unlocked
+    ???
+/usr/lib/python3.6/site-packages/_pytest/assertion/rewrite.py:162: in exec_module
+    source_stat, co = _rewrite_test(fn, self.config)
+/usr/lib/python3.6/site-packages/_pytest/assertion/rewrite.py:364: in _rewrite_test
+    tree = ast.parse(source, filename=strfn)
+/usr/lib/python3.6/ast.py:35: in parse
+    return compile(source, filename, mode, PyCF_ONLY_AST)
+E     File "/tests/tmp292qpw9w.py", line 1
+E       e provided information indicates that all the unit tests are passing successfully. Therefore, there is no need to modify the source code or the unit tests
+E                ^
+E   SyntaxError: invalid syntax[0m
+=========================== short test summary info ============================
+ERROR tmp292qpw9w.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+[31m=============================== [31m[1m1 error[0m[31m in 0.22s[0m[31m ===============================[0m
+
+2023-06-22 02:55:53.808 | INFO     | __main__:generate_python_code:342 - Done. Output saved to ./output/translations/daylength_xxjyrfvggi.csv.
