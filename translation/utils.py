@@ -33,6 +33,14 @@ def remove_ansi_escape_codes(s):
     return ansi_escape.sub('', s)
 
 
+def extract_code_block(completion):
+    # Extract the code block from the completion
+    code = completion.choices[0].message["content"].split("```")[1]
+    code = code.replace("python\n", "")
+
+    return code
+
+
 def extract_unit_test_code(message):
     start_marker = "UNIT TESTS:"
     end_marker = "```"

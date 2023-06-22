@@ -1,4 +1,5 @@
 import numpy as np
+from translation.utils import logger
 
 def ci_func(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c, atm2lnd_inst, photosyns_inst):
     # local variables
@@ -109,7 +110,7 @@ def test_ci_func():
     # Define a mock for photosyns_inst
     photosyns_inst = {
         'c3flag_patch': np.array([True]),
-        'itype': np.array([1]),
+        'itype': np.array([0]),
         'medlynslope': np.array([1.0]),
         'medlynintercept': np.array([1.0]),
         'stomatalcond_mtd': 'stomatalcond_mtd_medlyn2011',
@@ -151,7 +152,7 @@ def test_ci_func_with_c4_photosynthesis():
 
     photosyns_inst = {
         'c3flag_patch': np.array([False]),
-        'itype': np.array([1]),
+        'itype': np.array([0]),
         'medlynslope': np.array([1.0]),
         'medlynintercept': np.array([1.0]),
         'stomatalcond_mtd': 'stomatalcond_mtd_medlyn2011',
@@ -193,7 +194,7 @@ def test_ci_func_with_negative_net_photosynthesis():
 
     photosyns_inst = {
         'c3flag_patch': np.array([True]),
-        'itype': np.array([1]),
+        'itype': np.array([0]),
         'medlynslope': np.array([1.0]),
         'medlynintercept': np.array([1.0]),
         'stomatalcond_mtd': 'stomatalcond_mtd_medlyn2011',

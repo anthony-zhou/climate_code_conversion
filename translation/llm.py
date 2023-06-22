@@ -7,6 +7,8 @@ import dotenv
 import translation.testing as testing
 import translation.utils as utils
 from translation.utils import logger
+import translation.prompts.messages
+
 
 logger.add("llm_outputs.log")
 
@@ -33,68 +35,19 @@ def completion_with_backoff(**kwargs):
     return openai.ChatCompletion.create(**kwargs)
 
 
-def _generate_fortran_unit_tests(source_code):
+def _generate_fortran_unit_tests(source_code: str):
     logger.info("Generating unit tests in Fortran...")
-
-    prompt = f"""
-    Given fortran code, write unit tests using funit.
-
-    Example:
-    FORTRAN CODE:
-    ```
-    module fac
-        implicit none
-        
-        contains
-
-        recursive function factorial(n) result(fact)
-            integer, intent(in) :: n
-            integer :: fact
-
-            if (n == 0) then
-            fact = 1
-            else
-            fact = n * factorial(n - 1)
-            end if
-        end function factorial
-    end module fac
-    ```
-
-    FORTRAN TESTS:
-    ```
-    @test
-    subroutine test_fac()
-        use funit
-
-        @assertEqual(120, factorial(5), 'factorial(5)')
-        @assertEqual(1, factorial(1), 'factorial(1)')
-        @assertEqual(1, factorial(0), 'factorial(0)')
-
-    end subroutine test_fac
-    ```
-
-    Your turn:
-    FORTRAN CODE:\n```\n{source_code}\n```\n
-    FORTRAN TESTS:
-    """
-    logger.debug(f"PROMPT: {prompt}")
 
     completion = completion_with_backoff(
         model=model_name,
-        messages=[
-            {"role": "system", "content": "You're a proficient Fortran programmer."},
-            {
-                "role": "user",
-                "content": prompt,
-            },
-        ],
+        messages=translation.prompts.messages.fortran_unit_test_messages(source_code),
         temperature=0,
     )
 
     logger.debug(f'COMPLETION: {completion.choices[0].message["content"]}')
 
     # Extract the code block from the completion
-    unit_tests = completion.choices[0].message["content"].split("```")[1]
+    unit_tests = utils.extract_code_block(completion)
 
     return unit_tests
 
@@ -103,68 +56,32 @@ def _generate_fortran_unit_tests(source_code):
 def _generate_python_tests(python_function: str):
     logger.info("Generating unit tests based on python code...")
 
-    prompt = f"""
-    Generate unit tests for the following Python function using pytest. No need to import the module under test. ```python\n{python_function}\n```
-    """
-
-    logger.debug(f"PROMPT: {prompt}")
-
-
     completion = completion_with_backoff(
         model=model_name,
-        messages=[
-            {
-                "role": "system",
-                "content": """You're a programmer proficient in Python and unit testing. You can write and execute Python code by enclosing it in triple backticks, e.g. ```code goes here```"""
-            },
-            {
-                "role": "user",
-                "content": prompt,
-            },
-        ],
+        messages=translation.prompts.messages.generate_python_test_messages(python_function),
         temperature=0.0,
     )
 
     logger.debug(f'COMPLETION: {completion.choices[0].message["content"]}')
 
-    unit_tests = completion.choices[0].message["content"].split("```")[1]
-    unit_tests = unit_tests.replace("python\n", "")
-
+    unit_tests = utils.extract_code_block(completion)
 
     return unit_tests
 
 
 
-def _translate_tests_to_python(unit_tests):
+def _translate_tests_to_python(unit_tests: str):
     logger.info("Translating unit tests to Python...")
-
-    prompt = f"""
-    Convert the following unit tests from Fortran to Python using pytest. No need to import the module under test. ```\n{unit_tests}```\n
-    """
-    logger.debug(f"PROMPT: {prompt}")
 
     completion = completion_with_backoff(
         model=model_name,
-        messages=[
-            {
-                "role": "system",
-                "content": "You're a programmer proficient in Fortran and Python.",
-            },
-            {
-                "role": "user",
-                "content": prompt,
-            },
-        ],
+        messages=translation.prompts.messages.translate_tests_to_python_messages(unit_tests),
         temperature=0,
     )
 
     logger.debug(f'COMPLETION: {completion.choices[0].message["content"]}')
 
-    # Extract the code block from the completion
-    unit_tests = completion.choices[0].message["content"].split("```")[1]
-    # Remove `python` from the first line
-    unit_tests = unit_tests.replace("python\n", "")
-
+    unit_tests = utils.extract_code_block(completion)
     return unit_tests
 
 
@@ -175,77 +92,26 @@ def generate_unit_tests(source_code):
     return python_tests
 
 
-def _translate_function_to_python(source_code):
+def _translate_function_to_python(source_code: str):
     logger.info("Translating function to Python...")
-    prompt = f"""
-    Convert the following Fortran function to Python. ```\n{source_code}```\n
-    """
-    logger.debug(f"PROMPT: {prompt}")
+    
 
     completion = completion_with_backoff(
         model=model_name,
-        messages=[
-            {
-                "role": "system",
-                "content": "You're a programmer proficient in Fortran and Python.",
-            },
-            {
-                "role": "user",
-                "content": prompt,
-            },
-        ],
+        messages=translation.prompts.messages.translate_to_python_messages(source_code),
         temperature=0,
     )
 
     logger.debug(f'COMPLETION: {completion.choices[0].message["content"]}')
 
     # Extract the code block from the completion
-    python_function = completion.choices[0].message["content"].split("```")[1]
-    # Remove `python` from the first line
-    python_function = python_function.replace("python\n", "")
+    python_function = utils.extract_code_block(completion)
 
     return python_function
 
 
 def iterate(python_function, python_unit_tests, python_test_results, temperature=0.0):
-    messages = [
-            {
-            "role": "system",
-            "content": """You're a programmer proficient in Fortran and Python. You can write and execute Python code by enclosing it in triple backticks, e.g. ```code goes here```.
-            When prompted to fix source code and unit tests, always return a response of the form:
-            SOURCE CODE: ```<python source code>```
-            UNIT TESTS: ```<python unit tests>```. Do not return any additional context.
-            """,
-        },
-        # {
-        #     "role": "user",
-        #     "content": f"""Convert the following Fortran function to Python. ```\n{fortran_function}\n```"""
-        # },
-        # {
-        #     "role": "assistant",
-        #     "content": f"""Here's the converted Python function:\n```python\n{python_function}\n```"""
-        # },
-        {
-            "role": "user",
-            "content": f"""
-            Function being tested:
-            ```python\n{python_function}\n
-            Here are some unit tests for the above code and the corresponding output.
-            Unit tests:
-    ```python
-    {python_unit_tests}
-    ```
-            Output from `pytest`:
-            ```
-            {python_test_results}
-            ```
-
-            Modify the source code to pass the failing unit tests. Return a response of the following form:
-            SOURCE CODE: ```<python source code>```
-            UNIT TESTS: ```<python unit tests>```
-            """
-        }
-    ]
+    messages = translation.prompts.messages.iterate_messages(python_function, python_unit_tests, python_test_results)
 
     logger.debug(messages)
     completion = completion_with_backoff(
