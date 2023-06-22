@@ -3,18 +3,6 @@ import pytest
 from translation.llm import iterate
 
 def test_iterate():
-    # Define the Fortran function and unit tests
-    fortran_function = """
-    REAL FUNCTION MY_FUNCTION(X)
-        MY_FUNCTION = X**2
-    END FUNCTION MY_FUNCTION
-    """
-    fortran_unit_tests = """
-    PROGRAM TEST_MY_FUNCTION
-        WRITE(*,*) MY_FUNCTION(2.0)
-        WRITE(*,*) MY_FUNCTION(3.0)
-    END PROGRAM TEST_MY_FUNCTION
-    """
 
     # Define the expected Python function and unit tests
     python_function = """

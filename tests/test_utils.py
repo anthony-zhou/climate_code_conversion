@@ -30,3 +30,19 @@ def test_remove_ansi_escape_codes():
         expected_output = "Hello, World!"
         assert utils.remove_ansi_escape_codes(input_str) == expected_output
 
+
+def test_extract_source_code():
+    message = "Here is some text before the source code.\n\nSOURCE CODE:\n```python\nprint('Hello, world!')\n```\n\nAnd here is some text after the source code."
+    expected = "print('Hello, world!')"
+    assert utils.extract_source_code(message) == expected
+
+def test_extract_unit_test_code():
+    message = "Here is some text before the unit tests.\n\nUNIT TESTS:\n```python\nassert 1 + 1 == 2\n```\n\nAnd here is some text after the unit tests."
+    expected = "assert 1 + 1 == 2"
+    assert utils.extract_unit_test_code(message) == expected
+
+
+def test_extract_unit_test_code():
+    message = "Here is some text before the unit tests. "
+    expected = None
+    assert utils.extract_unit_test_code(message) == expected

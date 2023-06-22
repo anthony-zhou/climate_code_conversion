@@ -31,3 +31,45 @@ def find_diffs(source_code: str, previous_source_code: str) -> str:
 def remove_ansi_escape_codes(s):
     ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
     return ansi_escape.sub('', s)
+
+
+def extract_unit_test_code(message):
+    start_marker = "UNIT TESTS:"
+    end_marker = "```"
+
+    if message.find(start_marker) < 0:
+        return None
+    
+    # find the position of start and end markers
+    start = message.find(start_marker) + len(start_marker)
+    end = message.rfind(end_marker)
+    
+    # extract the unit test code
+    unit_test_code = message[start:end].strip()
+
+    # Remove ``` and python
+    unit_test_code = unit_test_code.replace("```", "")
+    unit_test_code = unit_test_code.replace("python\n", "")
+    
+    return unit_test_code
+
+def extract_source_code(message: str):
+    start_marker = "SOURCE CODE:"
+    end_marker = "```"
+
+    if message.find(start_marker) < 0:
+        return None
+
+
+    # find the position of start and end markers
+    start = message.find(start_marker) + len(start_marker)
+    end = message.rfind(end_marker)
+
+    # extract the source code
+    source_code = message[start:end].strip()
+
+    # Remove ``` and python
+    source_code = source_code.replace("```", "")
+    source_code = source_code.replace("python\n", "")
+
+    return source_code
