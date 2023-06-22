@@ -1,6 +1,6 @@
 import random
 import string
-import openai
+# import openai
 import os
 import dotenv
 
@@ -8,20 +8,25 @@ import testing as testing
 import utils as utils
 from utils import logger
 
+logger.add("llm_outputs.log")
+
 from tenacity import (
     retry,
     stop_after_attempt,
     wait_random_exponential,
 )  # for exponential backoff
 
+import promptlayer
 
 dotenv.load_dotenv()
-openai.api_key = os.environ["OPENAI_API_KEY"]
 
-model_name = "gpt-3.5-turbo-0613"
+promptlayer.api_key = os.environ.get("PROMPTLAYER_API_KEY")
 
-example_file = "./examples/daylength_2/fortran/DaylengthMod.f90"
+# Swap out your 'import openai'
+openai = promptlayer.openai
+openai.api_key = os.environ.get("OPENAI_API_KEY")
 
+model_name = "gpt-4-0613"
 
 @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(20))
 def completion_with_backoff(**kwargs):
@@ -176,17 +181,19 @@ def iterate(fortran_function, fortran_unit_tests, python_function, python_unit_t
             UNIT TESTS: ```<python unit tests>```. Do not return any additional context.
             """,
         },
-        {
-            "role": "user",
-            "content": f"""Convert the following Fortran function to Python. ```\n{fortran_function}\n```"""
-        },
-        {
-            "role": "assistant",
-            "content": f"""Here's the converted Python function:\n```python\n{python_function}\n```"""
-        },
+        # {
+        #     "role": "user",
+        #     "content": f"""Convert the following Fortran function to Python. ```\n{fortran_function}\n```"""
+        # },
+        # {
+        #     "role": "assistant",
+        #     "content": f"""Here's the converted Python function:\n```python\n{python_function}\n```"""
+        # },
         {
             "role": "user",
             "content": f"""
+            Function being tested:
+            ```python\n{python_function}\n
             Here are some unit tests for the above code and the corresponding output.
             Unit tests:
     ```python
@@ -206,7 +213,7 @@ def iterate(fortran_function, fortran_unit_tests, python_function, python_unit_t
 
     logger.debug(messages)
     completion = completion_with_backoff(
-        model="gpt-3.5-turbo-16k-0613",
+        model="gpt-4-0613",
         messages=messages,
         temperature=temperature,
     )
@@ -300,62 +307,62 @@ def generate_python_code(fortran_function, function_name=""):
 
 if __name__ == "__main__":
 
-#     fortran_function = """
-# !-----------------------------------------------------------------------
-# elemental real(r8) function daylength(lat, decl)
-#     !
-#     ! !DESCRIPTION:
-#     ! Computes daylength (in seconds)
-#     !
-#     ! Latitude and solar declination angle should both be specified in radians. decl must
-#     ! be strictly less than pi/2; lat must be less than pi/2 within a small tolerance.
-#     !
-#     ! !USES:
-#     use shr_infnan_mod, only : nan => shr_infnan_nan, &
-#                             assignment(=)
-#     use shr_const_mod , only : SHR_CONST_PI
-#     !
-#     ! !ARGUMENTS:
-#     real(r8), intent(in) :: lat    ! latitude (radians)
-#     real(r8), intent(in) :: decl   ! solar declination angle (radians)
-#     !
-#     ! !LOCAL VARIABLES:
-#     real(r8) :: my_lat             ! local version of lat, possibly adjusted slightly
-#     real(r8) :: temp               ! temporary variable
+    fortran_function = """
+!-----------------------------------------------------------------------
+elemental real(r8) function daylength(lat, decl)
+    !
+    ! !DESCRIPTION:
+    ! Computes daylength (in seconds)
+    !
+    ! Latitude and solar declination angle should both be specified in radians. decl must
+    ! be strictly less than pi/2; lat must be less than pi/2 within a small tolerance.
+    !
+    ! !USES:
+    use shr_infnan_mod, only : nan => shr_infnan_nan, &
+                            assignment(=)
+    use shr_const_mod , only : SHR_CONST_PI
+    !
+    ! !ARGUMENTS:
+    real(r8), intent(in) :: lat    ! latitude (radians)
+    real(r8), intent(in) :: decl   ! solar declination angle (radians)
+    !
+    ! !LOCAL VARIABLES:
+    real(r8) :: my_lat             ! local version of lat, possibly adjusted slightly
+    real(r8) :: temp               ! temporary variable
 
-#     ! number of seconds per radian of hour-angle
-#     real(r8), parameter :: secs_per_radian = 13750.9871_r8
+    ! number of seconds per radian of hour-angle
+    real(r8), parameter :: secs_per_radian = 13750.9871_r8
 
-#     ! epsilon for defining latitudes "near" the pole
-#     real(r8), parameter :: lat_epsilon = 10._r8 * epsilon(1._r8)
+    ! epsilon for defining latitudes "near" the pole
+    real(r8), parameter :: lat_epsilon = 10._r8 * epsilon(1._r8)
 
-#     ! Define an offset pole as slightly less than pi/2 to avoid problems with cos(lat) being negative
-#     real(r8), parameter :: pole = SHR_CONST_PI/2.0_r8
-#     real(r8), parameter :: offset_pole = pole - lat_epsilon
-#     !-----------------------------------------------------------------------
+    ! Define an offset pole as slightly less than pi/2 to avoid problems with cos(lat) being negative
+    real(r8), parameter :: pole = SHR_CONST_PI/2.0_r8
+    real(r8), parameter :: offset_pole = pole - lat_epsilon
+    !-----------------------------------------------------------------------
 
-#     ! Can't SHR_ASSERT in an elemental function; instead, return a bad value if any
-#     ! preconditions are violated
+    ! Can't SHR_ASSERT in an elemental function; instead, return a bad value if any
+    ! preconditions are violated
 
-#     ! lat must be less than pi/2 within a small tolerance
-#     if (abs(lat) >= (pole + lat_epsilon)) then
-#     daylength = nan
+    ! lat must be less than pi/2 within a small tolerance
+    if (abs(lat) >= (pole + lat_epsilon)) then
+    daylength = nan
 
-#     ! decl must be strictly less than pi/2
-#     else if (abs(decl) >= pole) then
-#     daylength = nan
+    ! decl must be strictly less than pi/2
+    else if (abs(decl) >= pole) then
+    daylength = nan
 
-#     ! normal case
-#     else    
-#     ! Ensure that latitude isn't too close to pole, to avoid problems with cos(lat) being negative
-#     my_lat = min(offset_pole, max(-1._r8 * offset_pole, lat))
+    ! normal case
+    else    
+    ! Ensure that latitude isn't too close to pole, to avoid problems with cos(lat) being negative
+    my_lat = min(offset_pole, max(-1._r8 * offset_pole, lat))
 
-#     temp = -(sin(my_lat)*sin(decl))/(cos(my_lat) * cos(decl))
-#     temp = min(1._r8,max(-1._r8,temp))
-#     daylength = 2.0_r8 * secs_per_radian * acos(temp) 
-#     end if
+    temp = -(sin(my_lat)*sin(decl))/(cos(my_lat) * cos(decl))
+    temp = min(1._r8,max(-1._r8,temp))
+    daylength = 2.0_r8 * secs_per_radian * acos(temp) 
+    end if
 
-# end function daylength"""
+end function daylength"""
 #     fortran_function = """
 # recursive function factorial(n) result(fact)
 #     integer, intent(in) :: n
@@ -368,20 +375,20 @@ if __name__ == "__main__":
 #     end if
 # end function factorial
 #     """
-    fortran_function = """!N order matrix A, return det(A)
-    real*8 function determinant(A, N)
-        integer,intent(in)::N
-        real*8,dimension(N,N),intent(in)::A
-        integer::i; integer,dimension(N)::ipiv; real*8::sign
-        real*8,dimension(N,N)::Acopy
-        Acopy=A; call dgetrf(N,N,Acopy,N,ipiv,i)
-        if(ipiv(1)==1) then; sign=1d0; else; sign=-1d0; end if
-        determinant=Acopy(1,1)
-        do i=2,N
-            if(ipiv(i)/=i) sign=-sign
-            determinant=determinant*Acopy(i,i)
-        end do
-        determinant=determinant*sign
-    end function determinant"""
+    # fortran_function = """!N order matrix A, return det(A)
+    # real*8 function determinant(A, N)
+    #     integer,intent(in)::N
+    #     real*8,dimension(N,N),intent(in)::A
+    #     integer::i; integer,dimension(N)::ipiv; real*8::sign
+    #     real*8,dimension(N,N)::Acopy
+    #     Acopy=A; call dgetrf(N,N,Acopy,N,ipiv,i)
+    #     if(ipiv(1)==1) then; sign=1d0; else; sign=-1d0; end if
+    #     determinant=Acopy(1,1)
+    #     do i=2,N
+    #         if(ipiv(i)/=i) sign=-sign
+    #         determinant=determinant*Acopy(i,i)
+    #     end do
+    #     determinant=determinant*sign
+    # end function determinant"""
     
-    generate_python_code(fortran_function, function_name="det")
+    generate_python_code(fortran_function, function_name="daylength")
