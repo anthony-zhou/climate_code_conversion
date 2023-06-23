@@ -1,4 +1,4 @@
-module  PhotosynthesisMod
+module PhotosynthesisMod
 
   !------------------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -8,7 +8,28 @@ module  PhotosynthesisMod
   !
   implicit none
   ! !PRIVATE MEMBER FUNCTIONS:
-  private :: ci_func        ! ci function
+  public :: ci_func        ! ci function (CHANGED TO PUBLIC - alz)
+  integer,parameter :: r8 = selected_real_kind(12) ! 8 byte real
+
+   contains
+
+   
+   subroutine quadratic(a, b, c, r1, r2)
+      implicit none
+      real(r8), intent(in) :: a, b, c
+      real(r8), intent(out) :: r1, r2
+      real(r8) :: discriminant
+
+      discriminant = b * b - 4.0 * a * c
+
+      if (discriminant >= 0.0) then
+          r1 = (-b + sqrt(discriminant)) / (2.0 * a)
+          r2 = (-b - sqrt(discriminant)) / (2.0 * a)
+      else
+          print *, "Quadratic solution error: b^2 - 4ac is negative."
+          stop
+      end if
+  end subroutine quadratic
 
   !------------------------------------------------------------------------------
   subroutine ci_func(ci, fval, p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol)
@@ -50,22 +71,29 @@ module  PhotosynthesisMod
     real(r8) :: ag, an, es
     
     
-    forc_pbot = 121000._r8 ! atmospheric pressure (Pa)
-    c3flag    = .true. ! true if C3 and false if C4
-    medlynslope =  6._r8! Slope for Medlyn stomatal conductance model method
-    medlynintercept = 100._r8 ! Intercept for Medlyn stomatal conductance model method
-    stomatalcond_mtd = stomatalcond_mtd_medlyn2011 ! method type to use for stomatal conductance (Medlyn or Ball-Berry)
-    vcmax_z =  62.5_r8 ! maximum rate of carboxylation (umol co2/m**2/s)
-    cp =  4.275_r8 ! CO2 compensation point (Pa)
-    kc =  40.49_r8 ! Michaelis-Menten constant for CO2 (Pa)
-    k0 =  27840._r8 ! Michaelis-Menten constant for CO2 (Pa)
-    qe =  1.0_r8 ! place holder ! quantum efficiency, used only for C4 (mol CO2 / mol photons)
-    tpu_z =  31.5_r8 ! triose phosphate utilization rate (umol CO2/m**2/s)
-    kp_z = 1.0_r8 ! place holder ! initial slope of CO2 response curve (C4 plants)
-    bbb =  100._r8 ! Ball-Berry minimum leaf conductance (umol H2O/m**2/s)
-    mbb =  9._r8 ! Ball-Berry slope of conductance-photosynthesis relationship
-    theta_cj = 0.98_r8 !
-    theta_ip = 0.95_r8 !
+   real(r8) :: bbb, cp, forc_pbot, ko, kc, kp_z, mbb, qe, tpu_z, vcmax_z
+   logical :: c3flag
+   real(r8) :: medlynintercept, medlynslope, theta_cj, theta_ip
+   integer :: stomatalcond_mtd, stomatalcond_mtd_medlyn2011, stomatalcond_mtd_bb1987
+
+   forc_pbot = 121000._r8 ! atmospheric pressure (Pa)
+   c3flag    = .true. ! true if C3 and false if C4
+   medlynslope =  6._r8! Slope for Medlyn stomatal conductance model method
+   medlynintercept = 100._r8 ! Intercept for Medlyn stomatal conductance model method
+   stomatalcond_mtd = 1 ! method type to use for stomatal conductance (Medlyn or Ball-Berry)
+   vcmax_z =  62.5_r8 ! maximum rate of carboxylation (umol co2/m**2/s)
+   cp =  4.275_r8 ! CO2 compensation point (Pa)
+   kc =  40.49_r8 ! Michaelis-Menten constant for CO2 (Pa)
+   ko =  27840._r8 ! Michaelis-Menten constant for O2 (Pa)
+   qe =  1.0_r8 ! place holder ! quantum efficiency, used only for C4 (mol CO2 / mol photons)
+   tpu_z =  31.5_r8 ! triose phosphate utilization rate (umol CO2/m**2/s)
+   kp_z = 1.0_r8 ! place holder ! initial slope of CO2 response curve (C4 plants)
+   bbb =  100._r8 ! Ball-Berry minimum leaf conductance (umol H2O/m**2/s)
+   mbb =  9._r8 ! Ball-Berry slope of conductance-photosynthesis relationship
+   theta_cj = 0.98_r8 !
+   theta_ip = 0.95_r8 !
+   stomatalcond_mtd_medlyn2011 = 1
+   stomatalcond_mtd_bb1987 = 2
     
     ! END LRH CHANGES FOR UNIT TEST
     !------------------------------------------------------------------------------
@@ -149,8 +177,6 @@ module  PhotosynthesisMod
       fval =ci - cair + an * forc_pbot * (1.4_r8*gs_mol+1.6_r8*gb_mol) / (gb_mol*gs_mol)
       
       ! Anthony: Save fval and gs_mol for evaluation
-
-    end associate
 
   end subroutine ci_func
 

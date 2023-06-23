@@ -1,0 +1,54 @@
+module test_photosynthesis
+
+    use funit
+
+    use PhotosynthesisMod, only : ci_func
+    
+    implicit none
+    integer,parameter :: r8 = selected_real_kind(12) ! 8 byte real
+
+    save
+    real(r8), parameter :: tol = 1.e-3_r8
+
+
+contains
+
+    @Test
+    subroutine test_ci_func()
+        real(r8)     :: ci       ! intracellular leaf CO2 (Pa)
+        real(r8)     :: lmr_z    ! canopy layer: leaf maintenance respiration rate (umol CO2/m**2/s)
+        real(r8)     :: par_z    ! par absorbed per unit lai for canopy layer (w/m**2)
+        real(r8)     :: gb_mol   ! leaf boundary layer conductance (umol H2O/m**2/s)
+        real(r8)     :: je       ! electron transport rate (umol electrons/m**2/s)
+        real(r8)     :: cair     ! Atmospheric CO2 partial pressure (Pa)
+        real(r8)     :: oair     ! Atmospheric O2 partial pressure (Pa)
+        real(r8)     :: rh_can   ! canopy air realtive humidity
+        integer      :: p, iv, c ! pft, vegetation type and column indexes (UNUSED)
+
+        real(r8)     :: fval     ! return function of the value f(ci)
+        real(r8)     :: gs_mol   ! leaf stomatal conductance (umol H2O/m**2/s)
+        real(r8)     :: expected_fval   
+        real(r8)     :: expected_gs_mol   
+
+        ci = 40
+        lmr_z = 6
+        par_z = 500
+        gb_mol = 500
+        je = 40
+        cair = 40
+        oair = 21000
+        rh_can = 40
+        p = 1
+        iv = 1
+        c = 1
+
+        expected_fval = 1995.7688742784451_r8
+        expected_gs_mol = 153.26317840161104_r8
+
+        call ci_func(ci, fval, p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol)
+
+        @assertEqual(expected_fval, fval, tolerance=tol)
+        @assertEqual(expected_gs_mol, gs_mol, tolerance=tol)
+    end subroutine test_ci_func
+
+end module test_photosynthesis
