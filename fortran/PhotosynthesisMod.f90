@@ -13,22 +13,46 @@ module PhotosynthesisMod
 
    contains
 
-   
+
    subroutine quadratic(a, b, c, r1, r2)
       implicit none
       real(r8), intent(in) :: a, b, c
       real(r8), intent(out) :: r1, r2
+      
+      ! !LOCAL VARIABLES:
       real(r8) :: discriminant
+      real(r8) :: q
 
       discriminant = b * b - 4.0 * a * c
 
-      if (discriminant >= 0.0) then
-          r1 = (-b + sqrt(discriminant)) / (2.0 * a)
-          r2 = (-b - sqrt(discriminant)) / (2.0 * a)
-      else
-          print *, "Quadratic solution error: b^2 - 4ac is negative."
-          stop
+
+      if (a == 0._r8) then
+         print *, "Quadratic solution error: a = 0."
+         stop
       end if
+
+      if (discriminant < 0.0) then
+         if ( - discriminant < 3.0_r8*epsilon(b)) then
+            discriminant = 0.0_r8
+         else
+            print *, "Quadratic solution error: b^2 - 4ac is negative."
+            print *, a, b, c
+            stop
+         end if
+      end if
+
+      if (b >= 0._r8) then
+         q = -0.5_r8 * (b + sqrt(discriminant))
+      else
+         q = -0.5_r8 * (b - sqrt(discriminant))
+      end if
+      
+      r1 = q / a
+      if (q /= 0._r8) then
+         r2 = c / q
+      else
+         r2 = 1.e36_r8
+      end if          
   end subroutine quadratic
 
   !------------------------------------------------------------------------------
@@ -146,31 +170,31 @@ module PhotosynthesisMod
       ! With an <= 0, then gs_mol = bbb or medlyn intercept
       cs = cair - 1.4_r8/gb_mol * an * forc_pbot
       !cs = max(cs,max_cs)
-      if ( stomatalcond_mtd == stomatalcond_mtd_medlyn2011 )then
-          term = 1.6_r8 * an / (cs / forc_pbot * 1.e06_r8)
-          aquad = 1.0_r8
-          bquad = -(2.0 * (medlynintercept*1.e-06_r8 + term) + (medlynslope * term)**2 / &
-               (gb_mol*1.e-06_r8 * rh_can))
-          cquad = medlynintercept*medlynintercept*1.e-12_r8 + &
-               (2.0*medlynintercept*1.e-06_r8 + term * &
-               (1.0 - medlynslope* medlynslope / rh_can)) * term
+      ! if ( stomatalcond_mtd == stomatalcond_mtd_medlyn2011 )then
+      !     term = 1.6_r8 * an / (cs / forc_pbot * 1.e06_r8)
+      !     aquad = 1.0_r8
+      !     bquad = -(2.0 * (medlynintercept*1.e-06_r8 + term) + (medlynslope * term)**2 / &
+      !          (gb_mol*1.e-06_r8 * rh_can))
+      !     cquad = medlynintercept*medlynintercept*1.e-12_r8 + &
+      !          (2.0*medlynintercept*1.e-06_r8 + term * &
+      !          (1.0 - medlynslope* medlynslope / rh_can)) * term
 
-          call quadratic (aquad, bquad, cquad, r1, r2)
-          gs_mol = max(r1,r2) * 1.e06_r8
-       else if ( stomatalcond_mtd == stomatalcond_mtd_bb1987 )then
-          aquad = cs
-          bquad = cs*(gb_mol - bbb) - mbb*an*forc_pbot
-          cquad = -gb_mol*(cs*bbb + mbb*an*forc_pbot*rh_can)
-          call quadratic (aquad, bquad, cquad, r1, r2)
-          gs_mol = max(r1,r2)
-       end if
+      !     call quadratic (aquad, bquad, cquad, r1, r2)
+      !     gs_mol = max(r1,r2) * 1.e06_r8
+      !  else if ( stomatalcond_mtd == stomatalcond_mtd_bb1987 )then
+      !     aquad = cs
+      !     bquad = cs*(gb_mol - bbb) - mbb*an*forc_pbot
+      !     cquad = -gb_mol*(cs*bbb + mbb*an*forc_pbot*rh_can)
+      !     call quadratic (aquad, bquad, cquad, r1, r2)
+      !     gs_mol = max(r1,r2)
+      !  end if
        
       ! LRH: If the quadratic solver for gs_mol above doesn't work, try this:
-      ! if ( stomatalcond_mtd == stomatalcond_mtd_medlyn2011 )then
-             !gs_mol = 1.6_r8 * (1._r8 + medlynslope / sqrt(2.0_r8)) * ( an / cs )! Medlyn
-      ! else 
-             !gs_mol = medlynslope * rh_can * ( an / cs )   
-      ! end if
+      if ( stomatalcond_mtd == stomatalcond_mtd_medlyn2011 )then
+             gs_mol = 1.6_r8 * (1._r8 + medlynslope / sqrt(2.0_r8)) * ( an / cs ) * 1.e06_r8! Medlyn
+      else 
+             gs_mol = medlynslope * rh_can * ( an / cs )   
+      end if
       
       
       ! Derive new estimate for ci
