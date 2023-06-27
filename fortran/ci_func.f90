@@ -1,71 +1,10 @@
-module PhotosynthesisMod
-
-  !------------------------------------------------------------------------------
-  ! !DESCRIPTION:
-  ! Leaf photosynthesis and stomatal conductance calculation as described by
-  ! Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593 and extended to
-  ! a multi-layer canopy
-  !
-  implicit none
-  ! !PRIVATE MEMBER FUNCTIONS:
-  public :: ci_func        ! ci function (CHANGED TO PUBLIC - alz)
-  integer,parameter :: r8 = selected_real_kind(12) ! 8 byte real
-
-   contains
-
-
-   subroutine quadratic(a, b, c, r1, r2)
-      implicit none
-      real(r8), intent(in) :: a, b, c
-      real(r8), intent(out) :: r1, r2
-      
-      ! !LOCAL VARIABLES:
-      real(r8) :: discriminant
-      real(r8) :: q
-
-      discriminant = b * b - 4.0 * a * c
-
-
-      if (a == 0._r8) then
-         print *, "Quadratic solution error: a = 0."
-         stop
-      end if
-
-      if (discriminant < 0.0) then
-         if ( - discriminant < 3.0_r8*epsilon(b)) then
-            discriminant = 0.0_r8
-         else
-            print *, "Quadratic solution error: b^2 - 4ac is negative."
-            print *, a, b, c
-            stop
-         end if
-      end if
-
-      if (b >= 0._r8) then
-         q = -0.5_r8 * (b + sqrt(discriminant))
-      else
-         q = -0.5_r8 * (b - sqrt(discriminant))
-      end if
-      
-      r1 = q / a
-      if (q /= 0._r8) then
-         r2 = c / q
-      else
-         r2 = 1.e36_r8
-      end if          
-  end subroutine quadratic
-
-  !------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+! ci_func modified specifically for input to ChatGPT for translation. 
   subroutine ci_func(ci, fval, p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol)
     !
     !! DESCRIPTION:
     ! evaluate the function
     ! f(ci)=ci - (ca - (1.37rb+1.65rs))*patm*an
-    !
-    ! remark:  I am attempting to maintain the original code structure, also
-    ! considering one may be interested to output relevant variables for the
-    ! photosynthesis model, I have decided to add these relevant variables to
-    ! the relevant data types.
     !
     !!ARGUMENTS:
     real(r8)             , intent(in)    :: ci       ! intracellular leaf CO2 (Pa)
@@ -188,20 +127,8 @@ module PhotosynthesisMod
           call quadratic (aquad, bquad, cquad, r1, r2)
           gs_mol = max(r1,r2)
        end if
-       
-      ! LRH: If the quadratic solver for gs_mol above doesn't work, try this:
-      ! if ( stomatalcond_mtd == stomatalcond_mtd_medlyn2011 )then
-      !        gs_mol = 1.6_r8 * (1._r8 + medlynslope / sqrt(2.0_r8)) * ( an / cs ) * 1.e06_r8! Medlyn
-      ! else 
-      !        gs_mol = medlynslope * rh_can * ( an / cs )   
-      ! end if
-      
-      
+
       ! Derive new estimate for ci
       fval =ci - cair + an * forc_pbot * (1.4_r8*gs_mol+1.6_r8*gb_mol) / (gb_mol*gs_mol)
       
-      ! Anthony: Save fval and gs_mol for evaluation
-
   end subroutine ci_func
-
- end module PhotosynthesisMod

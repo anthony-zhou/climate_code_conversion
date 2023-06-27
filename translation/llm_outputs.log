@@ -1,0 +1,327 @@
+2023-06-23 20:05:21.297 | INFO     | __main__:generate_python_code:138 - Saving outputs to ./output/translations/ci_func_vuzgnigehx.csv
+2023-06-23 20:05:21.297 | INFO     | __main__:_translate_function_to_python:96 - Translating function to Python...
+2023-06-23 20:05:21.297 | DEBUG    | translation.prompts.messages:translate_to_python_messages:123 - PROMPT: 
+    Convert the following Fortran function to Python. ```
+subroutine ci_func(ci, fval, p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol)
+    !
+    !! DESCRIPTION:
+    ! evaluate the function
+    ! f(ci)=ci - (ca - (1.37rb+1.65rs))*patm*an
+    !
+    !!ARGUMENTS:
+    real(r8)             , intent(in)    :: ci       ! intracellular leaf CO2 (Pa)
+    real(r8)             , intent(in)    :: lmr_z    ! canopy layer: leaf maintenance respiration rate (umol CO2/m**2/s)
+    real(r8)             , intent(in)    :: par_z    ! par absorbed per unit lai for canopy layer (w/m**2)
+    real(r8)             , intent(in)    :: gb_mol   ! leaf boundary layer conductance (umol H2O/m**2/s)
+    real(r8)             , intent(in)    :: je       ! electron transport rate (umol electrons/m**2/s)
+    real(r8)             , intent(in)    :: cair     ! Atmospheric CO2 partial pressure (Pa)
+    real(r8)             , intent(in)    :: oair     ! Atmospheric O2 partial pressure (Pa)
+    real(r8)             , intent(in)    :: rh_can   ! canopy air realtive humidity
+    integer              , intent(in)    :: p, iv, c ! pft, vegetation type and column indexes
+    real(r8)             , intent(out)   :: fval     ! return function of the value f(ci)
+    real(r8)             , intent(out)   :: gs_mol   ! leaf stomatal conductance (umol H2O/m**2/s)
+    !type(atm2lnd_type)   , intent(in)    :: atm2lnd_inst
+    !type(photosyns_type) , intent(inout) :: photosyns_inst
+    !
+    !local variables
+    real(r8) :: ai                  ! intermediate co-limited photosynthesis (umol CO2/m**2/s)
+    real(r8) :: cs                  ! CO2 partial pressure at leaf surface (Pa)
+    real(r8) :: term                 ! intermediate in Medlyn stomatal model
+    real(r8) :: aquad, bquad, cquad  ! terms for quadratic equations
+    real(r8) :: r1, r2               ! roots of quadratic equation
+    !------------------------------------------------------------------------------
+    ! LRH CHANGES FOR UNIT TEST
+    
+    real(r8) :: ac, aj, ap ! gross photosynthesis (umol CO2/m**2/s)
+    real(r8) :: ag, an, es
+    
+    
+   real(r8) :: bbb, cp, forc_pbot, ko, kc, kp_z, mbb, qe, tpu_z, vcmax_z
+   logical :: c3flag
+   real(r8) :: medlynintercept, medlynslope, theta_cj, theta_ip
+   integer :: stomatalcond_mtd, stomatalcond_mtd_medlyn2011, stomatalcond_mtd_bb1987
+
+   forc_pbot = 121000._r8 ! atmospheric pressure (Pa)
+   c3flag    = .true. ! true if C3 and false if C4
+   medlynslope =  6._r8! Slope for Medlyn stomatal conductance model method
+   medlynintercept = 100._r8 ! Intercept for Medlyn stomatal conductance model method
+   stomatalcond_mtd = 1 ! method type to use for stomatal conductance (Medlyn or Ball-Berry)
+   vcmax_z =  62.5_r8 ! maximum rate of carboxylation (umol co2/m**2/s)
+   cp =  4.275_r8 ! CO2 compensation point (Pa)
+   kc =  40.49_r8 ! Michaelis-Menten constant for CO2 (Pa)
+   ko =  27840._r8 ! Michaelis-Menten constant for O2 (Pa)
+   qe =  1.0_r8 ! place holder ! quantum efficiency, used only for C4 (mol CO2 / mol photons)
+   tpu_z =  31.5_r8 ! triose phosphate utilization rate (umol CO2/m**2/s)
+   kp_z = 1.0_r8 ! place holder ! initial slope of CO2 response curve (C4 plants)
+   bbb =  100._r8 ! Ball-Berry minimum leaf conductance (umol H2O/m**2/s)
+   mbb =  9._r8 ! Ball-Berry slope of conductance-photosynthesis relationship
+   theta_cj = 0.98_r8 !
+   theta_ip = 0.95_r8 !
+   stomatalcond_mtd_medlyn2011 = 1
+   stomatalcond_mtd_bb1987 = 2
+    
+    ! END LRH CHANGES FOR UNIT TEST
+    !------------------------------------------------------------------------------
+
+      if (c3flag) then
+         ! C3: Rubisco-limited photosynthesis
+         ac = vcmax_z * max(ci-cp, 0._r8) / (ci+kc*(1._r8+oair/ko))
+
+         ! C3: RuBP-limited photosynthesis
+         aj = je * max(ci-cp, 0._r8) / (4._r8*ci+8._r8*cp)
+
+         ! C3: Product-limited photosynthesis
+         ap = 3._r8 * tpu_z
+
+      else
+
+         ! C4: Rubisco-limited photosynthesis
+         ac = vcmax_z
+
+         ! C4: RuBP-limited photosynthesis
+         aj = qe * par_z * 4.6_r8
+
+         ! C4: PEP carboxylase-limited (CO2-limited)
+         ap = kp_z * max(ci, 0._r8) / forc_pbot
+
+      end if
+
+      ! Gross photosynthesis. First co-limit ac and aj. Then co-limit ap
+
+      aquad = theta_cj
+      bquad = -(ac + aj)
+      cquad = ac * aj
+      call quadratic (aquad, bquad, cquad, r1, r2)
+      ai = min(r1,r2)
+
+      aquad = theta_ip
+      bquad = -(ai + ap)
+      cquad = ai * ap
+      call quadratic (aquad, bquad, cquad, r1, r2)
+      ag = max(0._r8,min(r1,r2))
+
+      ! Net photosynthesis. Exit iteration if an < 0
+
+      an = ag - lmr_z
+      if (an < 0._r8) then
+         fval = 0._r8
+         return
+      endif
+      ! Quadratic gs_mol calculation with an known. Valid for an >= 0.
+      ! With an <= 0, then gs_mol = bbb or medlyn intercept
+      cs = cair - 1.4_r8/gb_mol * an * forc_pbot
+      !cs = max(cs,max_cs)
+      if ( stomatalcond_mtd == stomatalcond_mtd_medlyn2011 )then
+          term = 1.6_r8 * an / (cs / forc_pbot * 1.e06_r8)
+          aquad = 1.0_r8
+          bquad = -(2.0 * (medlynintercept*1.e-06_r8 + term) + (medlynslope * term)**2 / &
+               (gb_mol*1.e-06_r8 * rh_can))
+          cquad = medlynintercept*medlynintercept*1.e-12_r8 + &
+               (2.0*medlynintercept*1.e-06_r8 + term * &
+               (1.0 - medlynslope* medlynslope / rh_can)) * term
+
+          call quadratic (aquad, bquad, cquad, r1, r2)
+          gs_mol = max(r1,r2) * 1.e06_r8
+       else if ( stomatalcond_mtd == stomatalcond_mtd_bb1987 )then
+          aquad = cs
+          bquad = cs*(gb_mol - bbb) - mbb*an*forc_pbot
+          cquad = -gb_mol*(cs*bbb + mbb*an*forc_pbot*rh_can)
+          call quadratic (aquad, bquad, cquad, r1, r2)
+          gs_mol = max(r1,r2)
+       end if
+
+      ! Derive new estimate for ci
+      fval =ci - cair + an * forc_pbot * (1.4_r8*gs_mol+1.6_r8*gb_mol) / (gb_mol*gs_mol)
+      
+  end subroutine ci_func```
+
+    
+2023-06-23 20:06:17.943 | DEBUG    | __main__:_translate_function_to_python:105 - COMPLETION: Here is the Python version of the Fortran subroutine:
+
+```python
+import numpy as np
+
+def ci_func(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c):
+    # Constants
+    forc_pbot = 121000.0
+    c3flag = True
+    medlynslope = 6.0
+    medlynintercept = 100.0
+    stomatalcond_mtd = 1
+    vcmax_z = 62.5
+    cp = 4.275
+    kc = 40.49
+    ko = 27840.0
+    qe = 1.0
+    tpu_z = 31.5
+    kp_z = 1.0
+    bbb = 100.0
+    mbb = 9.0
+    theta_cj = 0.98
+    theta_ip = 0.95
+    stomatalcond_mtd_medlyn2011 = 1
+    stomatalcond_mtd_bb1987 = 2
+
+    # C3 or C4 photosynthesis
+    if c3flag:
+        ac = vcmax_z * max(ci-cp, 0.0) / (ci+kc*(1.0+oair/ko))
+        aj = je * max(ci-cp, 0.0) / (4.0*ci+8.0*cp)
+        ap = 3.0 * tpu_z
+    else:
+        ac = vcmax_z
+        aj = qe * par_z * 4.6
+        ap = kp_z * max(ci, 0.0) / forc_pbot
+
+    # Gross photosynthesis
+    aquad = theta_cj
+    bquad = -(ac + aj)
+    cquad = ac * aj
+    r1, r2 = np.roots([aquad, bquad, cquad])
+    ai = min(r1,r2)
+
+    aquad = theta_ip
+    bquad = -(ai + ap)
+    cquad = ai * ap
+    r1, r2 = np.roots([aquad, bquad, cquad])
+    ag = max(0.0,min(r1,r2))
+
+    # Net photosynthesis
+    an = ag - lmr_z
+    if an < 0.0:
+        fval = 0.0
+        return fval, None
+
+    # Quadratic gs_mol calculation
+    cs = cair - 1.4/gb_mol * an * forc_pbot
+    if stomatalcond_mtd == stomatalcond_mtd_medlyn2011:
+        term = 1.6 * an / (cs / forc_pbot * 1.e06)
+        aquad = 1.0
+        bquad = -(2.0 * (medlynintercept*1.e-06 + term) + (medlynslope * term)**2 / (gb_mol*1.e-06 * rh_can))
+        cquad = medlynintercept**2*1.e-12 + (2.0*medlynintercept*1.e-06 + term * (1.0 - medlynslope**2 / rh_can)) * term
+        r1, r2 = np.roots([aquad, bquad, cquad])
+        gs_mol = max(r1,r2) * 1.e06
+    elif stomatalcond_mtd == stomatalcond_mtd_bb1987:
+        aquad = cs
+        bquad = cs*(gb_mol - bbb) - mbb*an*forc_pbot
+        cquad = -gb_mol*(cs*bbb + mbb*an*forc_pbot*rh_can)
+        r1, r2 = np.roots([aquad, bquad, cquad])
+        gs_mol = max(r1,r2)
+
+    # Derive new estimate for ci
+    fval = ci - cair + an * forc_pbot * (1.4*gs_mol+1.6*gb_mol) / (gb_mol*gs_mol)
+    return fval, gs_mol
+```
+
+Please note that Python does not have a direct equivalent to Fortran's `intent(in)` and `intent(out)`. In Python, all function arguments are passed by reference, meaning that if you modify the argument inside the function, the original variable that was passed in will also be modified. However, for immutable types like integers and floats, this modification does not happen. Therefore, the `fval` and `gs_mol` are returned from the function.
+2023-06-23 20:06:17.943 | INFO     | __main__:_generate_python_tests:57 - Generating unit tests based on python code...
+2023-06-23 20:06:17.944 | DEBUG    | translation.prompts.messages:generate_python_test_messages:105 - PROMPT: 
+Generate unit tests for the following Python function using pytest. No need to import the module under test. ```python
+import numpy as np
+
+def ci_func(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c):
+    # Constants
+    forc_pbot = 121000.0
+    c3flag = True
+    medlynslope = 6.0
+    medlynintercept = 100.0
+    stomatalcond_mtd = 1
+    vcmax_z = 62.5
+    cp = 4.275
+    kc = 40.49
+    ko = 27840.0
+    qe = 1.0
+    tpu_z = 31.5
+    kp_z = 1.0
+    bbb = 100.0
+    mbb = 9.0
+    theta_cj = 0.98
+    theta_ip = 0.95
+    stomatalcond_mtd_medlyn2011 = 1
+    stomatalcond_mtd_bb1987 = 2
+
+    # C3 or C4 photosynthesis
+    if c3flag:
+        ac = vcmax_z * max(ci-cp, 0.0) / (ci+kc*(1.0+oair/ko))
+        aj = je * max(ci-cp, 0.0) / (4.0*ci+8.0*cp)
+        ap = 3.0 * tpu_z
+    else:
+        ac = vcmax_z
+        aj = qe * par_z * 4.6
+        ap = kp_z * max(ci, 0.0) / forc_pbot
+
+    # Gross photosynthesis
+    aquad = theta_cj
+    bquad = -(ac + aj)
+    cquad = ac * aj
+    r1, r2 = np.roots([aquad, bquad, cquad])
+    ai = min(r1,r2)
+
+    aquad = theta_ip
+    bquad = -(ai + ap)
+    cquad = ai * ap
+    r1, r2 = np.roots([aquad, bquad, cquad])
+    ag = max(0.0,min(r1,r2))
+
+    # Net photosynthesis
+    an = ag - lmr_z
+    if an < 0.0:
+        fval = 0.0
+        return fval, None
+
+    # Quadratic gs_mol calculation
+    cs = cair - 1.4/gb_mol * an * forc_pbot
+    if stomatalcond_mtd == stomatalcond_mtd_medlyn2011:
+        term = 1.6 * an / (cs / forc_pbot * 1.e06)
+        aquad = 1.0
+        bquad = -(2.0 * (medlynintercept*1.e-06 + term) + (medlynslope * term)**2 / (gb_mol*1.e-06 * rh_can))
+        cquad = medlynintercept**2*1.e-12 + (2.0*medlynintercept*1.e-06 + term * (1.0 - medlynslope**2 / rh_can)) * term
+        r1, r2 = np.roots([aquad, bquad, cquad])
+        gs_mol = max(r1,r2) * 1.e06
+    elif stomatalcond_mtd == stomatalcond_mtd_bb1987:
+        aquad = cs
+        bquad = cs*(gb_mol - bbb) - mbb*an*forc_pbot
+        cquad = -gb_mol*(cs*bbb + mbb*an*forc_pbot*rh_can)
+        r1, r2 = np.roots([aquad, bquad, cquad])
+        gs_mol = max(r1,r2)
+
+    # Derive new estimate for ci
+    fval = ci - cair + an * forc_pbot * (1.4*gs_mol+1.6*gb_mol) / (gb_mol*gs_mol)
+    return fval, gs_mol
+
+```
+    
+2023-06-23 20:06:54.164 | DEBUG    | __main__:_generate_python_tests:65 - COMPLETION: Here are some unit tests for the `ci_func` function. These tests are designed to check the function's behavior under normal conditions, as well as edge cases. 
+
+```python
+import pytest
+import numpy as np
+
+def test_ci_func():
+    # Test with normal values
+    ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c = 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+    fval, gs_mol = ci_func(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c)
+    assert isinstance(fval, float)
+    assert isinstance(gs_mol, float)
+
+    # Test with zero values
+    ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+    fval, gs_mol = ci_func(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c)
+    assert isinstance(fval, float)
+    assert gs_mol is None
+
+    # Test with negative values
+    ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c = -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0
+    fval, gs_mol = ci_func(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c)
+    assert isinstance(fval, float)
+    assert gs_mol is None
+
+    # Test with large values
+    ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c = 1e6, 1e6, 1e6, 1e6, 1e6, 1e6, 1e6, 1e6, 1e6, 1e6, 1e6
+    fval, gs_mol = ci_func(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c)
+    assert isinstance(fval, float)
+    assert isinstance(gs_mol, float)
+```
+
+These tests are not exhaustive and are meant to provide a starting point. More tests could be added to check the function's behavior with different combinations of input values.
+2023-06-23 20:06:54.165 | INFO     | translation.testing:run_tests:69 - Running tests using docker image python:3.8
+2023-06-23 20:06:54.171 | DEBUG    | translation.testing:_run_tests_in_docker:28 - Pulling Docker image python:3.8...

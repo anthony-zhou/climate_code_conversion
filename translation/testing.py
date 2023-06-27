@@ -60,7 +60,7 @@ def _run_tests_in_docker(source_code, docker_image):
 
     # Clean up
     container.remove() # type: ignore
-    os.remove(temp_filename)
+    # os.remove(temp_filename)
 
     return output.decode("utf-8")
 

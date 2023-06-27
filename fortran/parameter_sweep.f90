@@ -1,4 +1,7 @@
 program parameter_sweep
+    ! Note: this parameter sweep doesn't actually work, because sometimes it gets the `no real roots` error. 
+    ! For now let's just rely on unit tests.
+
     use PhotosynthesisMod, only: ci_func
 
     implicit none

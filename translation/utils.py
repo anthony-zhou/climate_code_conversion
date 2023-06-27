@@ -41,6 +41,18 @@ def extract_code_block(completion):
     return code
 
 
+def find_nth(haystack, needle, n):
+    """
+    Finds index of the *n*'th occurrence of *needle* within *haystack*. 
+    Returns -1 when the *n*'th occurrence is not found.
+    """
+    start = haystack.find(needle)
+    while start >= 0 and n > 1:
+        start = haystack.find(needle, start+len(needle))
+        n -= 1
+    return start
+
+
 def extract_unit_test_code(message):
     start_marker = "UNIT TESTS:"
     end_marker = "```"
@@ -65,13 +77,12 @@ def extract_source_code(message: str):
     start_marker = "SOURCE CODE:"
     end_marker = "```"
 
-    if message.find(start_marker) < 0:
+    if message.find(start_marker) < 0 or find_nth(message, end_marker, 2) < 0:
         return None
-
 
     # find the position of start and end markers
     start = message.find(start_marker) + len(start_marker)
-    end = message.rfind(end_marker)
+    end = find_nth(message, end_marker, 2)
 
     # extract the source code
     source_code = message[start:end].strip()
