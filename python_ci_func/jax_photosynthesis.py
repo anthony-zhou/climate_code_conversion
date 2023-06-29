@@ -6,7 +6,7 @@ def ci_func(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c, c3flag=T
     # Constants
     forc_pbot = 121000.0
     medlynslope = 6.0
-    medlynintercept = 100.0
+    medlynintercept = 10000.0
     vcmax_z = 62.5
     cp = 4.275
     kc = 40.49
@@ -94,7 +94,7 @@ def find_root(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c, c3flag
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=ci, y=fval))
     fig.update_layout(title='ci_func', xaxis_title='ci', yaxis_title='fval')
-    fig.write_image('./fig3.png')
+    fig.write_image('./fig4.png')
 
     gs_mol = ci_func(sol.root, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c, c3flag=True, stomatalcond_mtd=1)[1]
     print('ci = ', sol.root, 'gs_mol = ', gs_mol)
@@ -107,7 +107,7 @@ def find_root(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c, c3flag
 
 if __name__ == '__main__':
     ci = 40
-    lmr_z = 6
+    lmr_z = 4
     par_z = 500
     gb_mol = 500
     je = 60

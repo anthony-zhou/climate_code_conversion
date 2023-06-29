@@ -4,7 +4,7 @@ def ci_func(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c, c3flag=T
     # Constants
     forc_pbot = 121000.0
     medlynslope = 6.0
-    medlynintercept = 100.0
+    medlynintercept = 10000.0
     vcmax_z = 62.5
     cp = 4.275
     kc = 40.49
