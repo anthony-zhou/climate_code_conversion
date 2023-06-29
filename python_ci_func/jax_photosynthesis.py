@@ -48,7 +48,7 @@ def ci_func(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c, c3flag=T
     an = ag - lmr_z
     if an < 0.0:
         fval = 0.0
-        return fval, None
+        return fval, None, None
 
     # Quadratic gs_mol calculation
     cs = cair - 1.4/gb_mol * an * forc_pbot
@@ -71,10 +71,10 @@ def ci_func(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c, c3flag=T
     # Derive new estimate for ci
     fval = ci - cair + an * forc_pbot * (1.4*gs_mol+1.6*gb_mol) / (gb_mol*gs_mol)
 
-    return fval.real, gs_mol.real
+    return fval.real, gs_mol.real, an.real
 
 
-def find_root(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c, c3flag=True, stomatalcond_mtd=1):
+def solve_ci(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c, c3flag=True, stomatalcond_mtd=1):
 
     # Define a function to find the root of my_function
     def find_root(ci):
@@ -82,7 +82,7 @@ def find_root(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c, c3flag
 
     # Use SciPy to find the root of my_function
     from scipy.optimize import root_scalar
-    sol = root_scalar(find_root, bracket=[500.0, 20000.0], method='brentq')
+    sol = root_scalar(find_root, bracket=[20.0, 20000.0], method='brentq')
 
     # Graph value of ci_func from 1 to 100 using plotly
     import plotly.graph_objects as go
@@ -96,13 +96,15 @@ def find_root(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c, c3flag
     fig.update_layout(title='ci_func', xaxis_title='ci', yaxis_title='fval')
     fig.write_image('./fig4.png')
 
-    gs_mol = ci_func(sol.root, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c, c3flag=True, stomatalcond_mtd=1)[1]
-    print('ci = ', sol.root, 'gs_mol = ', gs_mol)
+    _, gs_mol, an = ci_func(sol.root, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c, c3flag=True, stomatalcond_mtd=1)
+    print('ci = ', sol.root, 'gs_mol = ', gs_mol, 'an = ', an)
 
 
 
     # Return the root of my_function
-    return sol.root
+    return sol.root, gs_mol, an
+
+
 
 
 if __name__ == '__main__':
@@ -118,6 +120,28 @@ if __name__ == '__main__':
     iv = 1
     c = 1
 
-    ci_val = find_root(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c)
+
+    import plotly.graph_objects as go
+    import numpy as np
+    # Try solving ci across ten values of cair
+    cair_range = np.linspace(2000, 10000, 10)
+    y = np.zeros(10)
+    for i in range(10):
+        print(cair_range[i])
+        ci_val, gs_mol, an = solve_ci(ci, lmr_z, par_z, gb_mol, je, cair_range[i], oair, rh_can, p, iv, c)
+        y[i] = gs_mol
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=cair_range, y=y))
+    fig.update_layout(title="gs_mol for different atmospheric CO2 pressure", xaxis_title='c_air', yaxis_title='gs_mol')
+    fig.write_image('./gs_mol.png')
+
+
+    
+
+
+
+    ci_val, gs_mol, an = solve_ci(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c)
+
+
 
     # assert ci_val == pytest.approx(40.0)
