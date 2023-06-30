@@ -10,16 +10,22 @@ Assuming you are running Ubuntu:
 2. `sudo apt install gfortran cmake` as build tools for Fortran.
 3. `sudo apt install m4` as a prerequisite for pFUnit. 
 4. Install `pFUnit` (see below)
+5. `pip install -r requirements.txt` to install all Python packages
+6. `pip install -e .` to  add the local `translation` package to your path (needed for absolute imports)
 
 Once you've installed `pFUnit`, get the absolute path to its installation directory and add it to as an environment variable (e.g. `export PFUNIT_DIR=/home/ubuntu/pFUnit/build/installed`). 
 
-## Set up the import path
+## Environment Variables
 
-Before running scripts, you should also add this library to your path as a local `pip` package (this makes sure that absolute imports like `from translation.utils import logger` will work):
+To run the LLM code, you need an `OPENAI_API_KEY` environment variable. You can set this from a `.env` file in this directory. For example: `touch .env && echo "OPENAI_API_KEY=sk-yadayadayada" > .env`.
 
-1. In the project directory, run `python -m pip install -e .`
+## Folder Structure
 
-By this point, you should be able to run all code and unit tests in the project!
+`archive` contains old files.
+`fortran` contains a Fortran version of photosynthesis.
+`python_ci_func` contains a Python version of photosynthesis.
+`tests` contains unit tests for the `translation` module.
+`translation` contains the `translation` module, which is primarily a CLI used to translate code automatically. 
 
 ### Installing `pFUnit`
 
@@ -38,18 +44,9 @@ Then pFUnit should be installed. Note that you may get the error (when running `
 
 By default, pFUnit should install to `./pfUnit/build/installed`. Go to this directory and `pwd` for the absolute path. 
 
+## Testing
 
-## Running the tests
-
-Each project in `examples` has a `fortran` folder and a corresponding `python` folder. 
-
-To run the Fortran tests:
-1. `cd fortran && ./run_tests.sh`
-
-To run the Python tests:
-1. `cd python && ./run_tests.sh`
-
-Tests can currently only be run from the same directory. This design is subject to change. 
+Python unit tests can be run with `pytest`. 
 
 ## Next Up
 
