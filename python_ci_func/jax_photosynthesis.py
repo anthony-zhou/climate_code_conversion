@@ -209,7 +209,7 @@ if __name__ == "__main__":
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=cair_range, y=y / 1e6))
     fig.update_layout(
-        title="gs_mol for different atmospheric CO2 pressure",
+        title="Stomatal conductance vs. atmospheric partial pressure of CO2",
         xaxis_title="Atmospheric partial pressure of CO2 (Pa)",
         yaxis_title="Stomatal conductance gs_mol (mol H2O/m**2/s)",
     )

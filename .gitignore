@@ -51,3 +51,5 @@ output
 
 # Local package files
 *.egg-info
+
+.DS_Store
