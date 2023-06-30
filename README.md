@@ -51,9 +51,3 @@ To run the CLI, call `python ./translation/main.py`. This is a work in progress.
 ## Testing
 
 Use `pytest` for Python unit tests.
-
-## Next Up
-
-We want to try translating some more complicated functions and save the examples here. Once we move to even bigger programs, we'll need to do some automated chunking to split up files into reasonable chunks. 
-
-Currently we can just test using the ChatGPT UI. 
