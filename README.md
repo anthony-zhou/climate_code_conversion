@@ -15,18 +15,6 @@ Assuming you are running Ubuntu:
 
 Once you've installed `pFUnit`, get the absolute path to its installation directory and add it to as an environment variable (e.g. `export PFUNIT_DIR=/home/ubuntu/pFUnit/build/installed`). 
 
-## Environment Variables
-
-To run the LLM code, you need an `OPENAI_API_KEY` environment variable. You can set this from a `.env` file in this directory. For example: `touch .env && echo "OPENAI_API_KEY=sk-yadayadayada" > .env`.
-
-## Folder Structure
-
-`archive` contains old files.
-`fortran` contains a Fortran version of photosynthesis.
-`python_ci_func` contains a Python version of photosynthesis.
-`tests` contains unit tests for the `translation` module.
-`translation` contains the `translation` module, which is primarily a CLI used to translate code automatically. 
-
 ### Installing `pFUnit`
 
 `pFUnit` is a testing library for Fortran that is used by CTSM for unit testing. Here's how you install it:
@@ -44,9 +32,25 @@ Then pFUnit should be installed. Note that you may get the error (when running `
 
 By default, pFUnit should install to `./pfUnit/build/installed`. Go to this directory and `pwd` for the absolute path. 
 
+## Environment Variables
+
+To run the LLM code, you need an `OPENAI_API_KEY` environment variable. You can set this from a `.env` file in this directory. For example: `touch .env && echo "OPENAI_API_KEY=sk-yadayadayada" > .env`.
+
+## Running the CLI
+
+To run the CLI, call `python ./translation/main.py`. This is a work in progress. 
+
+## Folder Structure
+
+`archive` contains old files.
+`fortran` contains a Fortran version of photosynthesis.
+`python_ci_func` contains a Python version of photosynthesis.
+`tests` contains unit tests for the `translation` module.
+`translation` contains the `translation` module, which is primarily a CLI used to translate code automatically. 
+
 ## Testing
 
-Python unit tests can be run with `pytest`. 
+Use `pytest` for Python unit tests.
 
 ## Next Up
 
