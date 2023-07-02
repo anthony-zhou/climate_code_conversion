@@ -21,6 +21,12 @@ PhotosynthesisMod.o: PhotosynthesisMod.f90
 parameter_sweep.o: parameter_sweep.f90 PhotosynthesisMod.o
 	$(FC) $(FCFLAGS) -c parameter_sweep.f90
 
+speed_benchmarking: speed_benchmarking.o PhotosynthesisMod.o
+	$(FC) $(FCFLAGS) -o speed_benchmarking speed_benchmarking.f90 PhotosynthesisMod.o
+
+speed_benchmarking.o: speed_benchmarking.f90 PhotosynthesisMod.o
+	$(FC) $(FCFLAGS) -c speed_benchmarking.f90
+
 .PHONY: clean
 
 clean:

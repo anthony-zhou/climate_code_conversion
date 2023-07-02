@@ -2,7 +2,6 @@
 
 import jax.numpy as np
 
-
 def ci_func(
     ci,
     lmr_z,

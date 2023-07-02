@@ -103,7 +103,7 @@ module PhotosynthesisMod
    forc_pbot = 121000._r8 ! atmospheric pressure (Pa)
    c3flag    = .true. ! true if C3 and false if C4
    medlynslope =  6._r8! Slope for Medlyn stomatal conductance model method
-   medlynintercept = 100._r8 ! Intercept for Medlyn stomatal conductance model method
+   medlynintercept = 10000._r8 ! Intercept for Medlyn stomatal conductance model method
    stomatalcond_mtd = 1 ! method type to use for stomatal conductance (Medlyn or Ball-Berry)
    vcmax_z =  62.5_r8 ! maximum rate of carboxylation (umol co2/m**2/s)
    cp =  4.275_r8 ! CO2 compensation point (Pa)
