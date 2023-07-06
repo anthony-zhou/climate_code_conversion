@@ -1,6 +1,14 @@
-# Complete conversion to JAX
+import math
+from scipy.optimize import root_scalar  # type: ignore
+import numpy as np
 
-import jax.numpy as np
+
+def quadratic_roots(a, b, c):
+    sqrt_discriminant = math.sqrt(b**2 - 4 * a * c)
+    root1 = (-b - sqrt_discriminant) / (2 * a)
+    root2 = (-b + sqrt_discriminant) / (2 * a)
+    return root1, root2
+
 
 def ci_func(
     ci,
@@ -49,13 +57,13 @@ def ci_func(
     aquad = theta_cj
     bquad = -(ac + aj)
     cquad = ac * aj
-    r1, r2 = np.roots(np.array([aquad, bquad, cquad]))
+    r1, r2 = quadratic_roots(aquad, bquad, cquad)
     ai = min(r1, r2)
 
     aquad = theta_ip
     bquad = -(ai + ap)
     cquad = ai * ap
-    r1, r2 = np.roots(np.array([aquad, bquad, cquad]))
+    r1, r2 = quadratic_roots(aquad, bquad, cquad)
     ag = max(0.0, min(r1, r2))
 
     # Net photosynthesis
@@ -81,23 +89,21 @@ def ci_func(
             )
             * term
         )
-        r1, r2 = np.roots(np.array([aquad, bquad, cquad]))
+        r1, r2 = quadratic_roots(aquad, bquad, cquad)
         gs_mol = max(r1, r2) * 1.0e06
     elif stomatalcond_mtd == stomatalcond_mtd_bb1987:
         aquad = cs
         bquad = cs * (gb_mol - bbb) - mbb * an * forc_pbot
         cquad = -gb_mol * (cs * bbb + mbb * an * forc_pbot * rh_can)
-        r1, r2 = np.roots(np.array([aquad, bquad, cquad]))
+        r1, r2 = quadratic_roots(aquad, bquad, cquad)
         gs_mol = max(r1, r2)
     else:
         gs_mol = 0.0
 
     # Derive new estimate for ci
-    fval = (
-        ci - cair + an * forc_pbot * (1.4 * gs_mol + 1.6 * gb_mol) / (gb_mol * gs_mol)
-    )
+    fval = ci - cair + an * forc_pbot * (1.4 / gb_mol + 1.6 / gs_mol)
 
-    return fval.real, gs_mol.real, an.real
+    return fval, gs_mol, an
 
 
 def solve_ci(
@@ -133,13 +139,6 @@ def solve_ci(
             stomatalcond_mtd=stomatalcond_mtd,
         )[0]
 
-    # Use SciPy to find the root of my_function
-    from scipy.optimize import root_scalar
-
-    # Graph value of ci_func from 1 to 100 using plotly
-    import plotly.graph_objects as go
-    import numpy as np
-
     # First find a negative value
     lower = 0
 
@@ -172,59 +171,12 @@ def solve_ci(
         c3flag=True,
         stomatalcond_mtd=1,
     )
-    print("ci = ", sol.root, "gs_mol = ", gs_mol, "an = ", an)
 
     return sol.root, gs_mol, an
 
 
-if __name__ == "__main__":
-    ci = 40
-    lmr_z = 4
-    par_z = 500
-    gb_mol = 50_000
-    je = 40
-    cair = 45
-    oair = 21000
-    rh_can = 0.40
-    p = 1
-    iv = 1
-    c = 1
-
-    import plotly.graph_objects as go
-    import numpy as np
-
-    cair_range = np.linspace(15, 100, 100)
-    y = np.zeros(100)
-    an_vals = np.zeros(100)
-    ci_vals = np.zeros(100)
-    for i in range(100):
-        ci = cair_range[i] / 1.5
-        ci_val, gs_mol, an = solve_ci(
-            ci, lmr_z, par_z, gb_mol, je, cair_range[i], oair, rh_can, p, iv, c
-        )
-        ci_vals[i] = ci_val
-        an_vals[i] = an
-        y[i] = gs_mol
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=cair_range, y=y / 1e6))
-    fig.update_layout(
-        title="Stomatal conductance vs. atmospheric partial pressure of CO2",
-        xaxis_title="Atmospheric partial pressure of CO2 (Pa)",
-        yaxis_title="Stomatal conductance gs_mol (mol H2O/m**2/s)",
+def main(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c):
+    ci_val, gs_mol, an = solve_ci(
+        ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c
     )
-    fig.write_image("./gs_mol.png")
-
-    # fig = go.Figure()
-    # fig.add_trace(go.Scatter(x=ci_vals, y=an_vals))
-    # fig.update_layout(
-    #     title="photosynthesis and c_i",
-    #     xaxis_title="c_i (Pa)",
-    #     yaxis_title="photosynthesis (umol CO2/m**2/s)",
-    # )
-    # fig.write_image("./photosynthesis.png")
-
-    # ci_val, gs_mol, an = solve_ci(
-    #     ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c
-    # )
-
-    # assert ci_val == pytest.approx(40.0)
+    return ci_val, gs_mol

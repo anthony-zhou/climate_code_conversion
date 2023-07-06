@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
-from python_ci_func.numpy_photosynthesis import ci_func
+from python_ci_func.comparisons.voriginal import ci_func
+
 
 def test_ci_func():
     ci = 40
