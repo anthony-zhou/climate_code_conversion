@@ -1,6 +1,7 @@
 import math
 from scipy.optimize import root_scalar  # type: ignore
 import numpy as np
+import functools
 
 
 def quadratic_roots(a, b, c):
@@ -106,58 +107,53 @@ def ci_func(
     return fval, gs_mol, an
 
 
-def solve_ci(
-    ci,
-    lmr_z,
-    par_z,
-    gb_mol,
-    je,
-    cair,
-    oair,
-    rh_can,
-    p,
-    iv,
-    c,
-    c3flag=True,
-    stomatalcond_mtd=1,
-):
-    # Define a function to find the root of my_function
-    def find_root(ci):
-        return ci_func(
-            ci,
-            lmr_z,
-            par_z,
-            gb_mol,
-            je,
-            cair,
-            oair,
-            rh_can,
-            p,
-            iv,
-            c,
-            c3flag=c3flag,
-            stomatalcond_mtd=stomatalcond_mtd,
-        )[0]
+# Define a function to find the root of my_function
+def root_func(lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c):
+    partial = functools.partial(
+        ci_func,
+        lmr_z=lmr_z,
+        par_z=par_z,
+        gb_mol=gb_mol,
+        je=je,
+        cair=cair,
+        oair=oair,
+        rh_can=rh_can,
+        p=p,
+        iv=iv,
+        c=c,
+    )
+    return lambda x: partial(x)[0]
 
+
+def solve_ci(ci, f):
     # First find a negative value
-    lower = 0
+    lower = ci / 2.0
 
-    ci = np.linspace(0, 80, 50)
-    fval = np.zeros(50)
-    for i in range(50):
-        fval[i] = find_root(ci[i])
-        if fval[i] < -1:
-            lower = ci[i]
+    # Technically instead of doing ci / 2.0 we should do something like this:
+    # ci = np.linspace(0, 80, 50)
+    # fval = np.zeros(50)
+    # for i in range(50):
+    #     fval[i] = f(ci[i])
+    #     if fval[i] < -1:
+    #         lower = ci[i]
 
     # fig = go.Figure()
     # fig.add_trace(go.Scatter(x=ci, y=fval))
     # fig.update_layout(title="ci_func", xaxis_title="ci", yaxis_title="fval")
     # fig.write_image("./fig4.png")
 
-    sol = root_scalar(find_root, bracket=[lower, 90.0], method="brentq")
+    sol = root_scalar(f, bracket=[lower, 90.0], method="brentq")
+
+    return sol.root
+
+
+def main(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c):
+    f = root_func(lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c)
+
+    ci_val = solve_ci(ci, f)
 
     _, gs_mol, an = ci_func(
-        sol.root,
+        ci_val,
         lmr_z,
         par_z,
         gb_mol,
@@ -172,11 +168,4 @@ def solve_ci(
         stomatalcond_mtd=1,
     )
 
-    return sol.root, gs_mol, an
-
-
-def main(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c):
-    ci_val, gs_mol, an = solve_ci(
-        ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c
-    )
     return ci_val, gs_mol

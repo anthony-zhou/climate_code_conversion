@@ -73,8 +73,8 @@ def plot_runtimes(path):
         )
 
     fig.update_layout(
-        title="Runtime of main function across multiple trials",
-        xaxis_title="Trial",
+        title="Runtime of ci solver across multiple trials",
+        xaxis_title="Number of Trials",
         yaxis_title="Runtime (s)",
     )
 
