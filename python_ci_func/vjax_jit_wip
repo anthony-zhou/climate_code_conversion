@@ -1,0 +1,343 @@
+import math
+import numpy as np
+from jax import jit, lax
+import jax.numpy as jnp
+from functools import partial
+
+
+@jit
+def hybrid(x0, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c):
+    eps = 1e-2
+    eps1 = 1e-4
+    itmax = 40
+    iter = 0
+    tol, minx, minf = 0.0, 0.0, 0.0
+
+    f0, gs_mol = ci_func(x0, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c)
+
+    minx = lax.cond(f0 == 0.0, x0, lambda _: x0, x0, lambda _: x0)
+    minf = lax.cond(f0 == 0.0, f0, lambda _: f0, f0, lambda _: f0)
+
+    x1 = x0 * 0.99
+
+    f1, gs_mol = ci_func(x1, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c)
+
+    minx = lax.cond(f1 < minf, x1, lambda _: x1, minx, lambda _: minx)
+    minf = lax.cond(f1 < minf, f1, lambda _: f1, minf, lambda _: minf)
+
+    def cond_fun(vals):
+        _, _, _, iter, _ = vals
+        return iter < itmax
+
+    def body_fun(vals):
+        x0, x1, f0, iter, minx = vals
+        f1, gs_mol = ci_func(x1, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c)
+        dx = -f1 * (x1 - x0) / (f1 - f0)
+        x = x1 + dx
+        tol = jnp.abs(x) * eps
+        x0 = x1
+        f0 = f1
+        x1 = x
+        iter = iter + 1
+        # minf_copy = minf
+        # minx_copy = minx
+        # minx = lax.cond(f1 < minf_copy, x1, lambda _: x1, minx, lambda _: minx)
+        # minf = lax.cond(f1 < minf, f1, lambda _: f1, minf, lambda _: minf)
+        minx = lax.cond(f1 < minf, x1, lambda _: x1, minx, lambda _: minx)
+
+        result = lax.cond(
+            jnp.abs(f1) <= eps1,
+            x1,
+            lambda _: (x1, gs_mol, iter),
+            x1,
+            lambda x: lax.cond(
+                f1 * f0 < 0.0,
+                x,
+                lambda x: brent(
+                    x0,
+                    x1,
+                    f0,
+                    f1,
+                    tol,
+                    p,
+                    iv,
+                    c,
+                    gb_mol,
+                    je,
+                    cair,
+                    oair,
+                    lmr_z,
+                    par_z,
+                    rh_can,
+                    gs_mol,
+                ),
+                x,
+                lambda x: (x, gs_mol, iter),
+            ),
+        )
+        return result[0], result[1], f1, result[2], minx
+
+    result = lax.while_loop(cond_fun, body_fun, (x0, x1, f0, iter, minx))
+    x0, gs_mol, _, iter, minx = result
+
+    f1, gs_mol = ci_func(minx, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c)
+
+    return x0, gs_mol, iter
+
+
+from jax import jit, lax, numpy as jnp
+
+
+@jit
+def brent(
+    x1,
+    x2,
+    f1: float,
+    f2: float,
+    tol,
+    ip,
+    iv,
+    ic,
+    gb_mol,
+    je,
+    cair,
+    oair,
+    lmr_z,
+    par_z,
+    rh_can,
+    gs_mol,
+):
+    itmax = 20
+    eps = 1e-2
+    a = x1
+    b = x2
+    fa = f1
+    fb = f2
+    c = b
+    fc = fb
+    d = b - a
+    e = d
+    iter = 0
+
+    def cond_fun(vals):
+        a, b, c, fa, fb, fc, d, e, gs_mol, iter = vals
+        return lax.bitwise_and(iter < itmax, fb != 0)
+
+    def body_fun(vals):
+        a, b, c, fa, fb, fc, d, e, gs_mol, iter = vals
+        c, fc, d, e = lax.cond(
+            (fb > 0 and fc > 0) or (fb < 0 and fc < 0),
+            (a, fa, b - a, b - a),
+            lambda _: (a, fa, b - a, b - a),
+            (c, fc, d, e),
+            lambda _: (c, fc, d, e),
+        )
+        swaps = lax.cond(
+            abs(fc) < abs(fb), (b, c, fb, fc), lambda x: x, (a, b, fa, fb), lambda x: x
+        )
+        a, b, fa, fb = b, swaps[0], fb, swaps[1]
+        c, fc = swaps[2], swaps[3]
+        tol1 = 2 * eps * abs(b) + 0.5 * tol
+        xm = 0.5 * (c - b)
+        e, d = lax.cond(
+            abs(e) >= tol1 and abs(fa) > abs(fb),
+            (fa, fb, a, c, b, xm),
+            lambda x: (x[4] - x[2])
+            * (x[0] / x[1])
+            * (
+                (x[0] / x[3]) * ((x[0] / x[1]) - (x[0] / x[3]))
+                - (x[4] - x[2]) * ((x[0] / x[3]) - 1)
+            )
+            / (((x[0] / x[1]) - 1) * ((x[0] / x[3]) - 1) * ((x[0] / x[1]) - 1)),
+            (d, xm),
+            lambda x: x,
+        )
+        a, fa = b, fb
+        b = lax.cond(
+            abs(d) > tol1,
+            b + d,
+            b + jnp.copysign(jnp.array([tol1]), jnp.array([xm]))[0],
+        )
+        fb, gs_mol = ci_func(
+            b, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, ip, iv, ic
+        )
+        iter = iter + 1
+        return a, b, c, fa, fb, fc, d, e, gs_mol, iter
+
+    a, b, c, fa, fb, fc, d, e, gs_mol, iter = lax.while_loop(
+        cond_fun, body_fun, (a, b, c, fa, fb, fc, d, e, gs_mol, iter)
+    )
+
+    x = b
+    return x, gs_mol
+
+
+@jit
+def quadratic_roots(a, b, c):
+    sqrt_discriminant = jnp.sqrt(jnp.array([b**2 - 4 * a * c]))[0]
+    root1 = (-b - sqrt_discriminant) / (2 * a)
+    root2 = (-b + sqrt_discriminant) / (2 * a)
+    return root1, root2
+
+
+stomatalcond_mtd_medlyn2011 = 1
+stomatalcond_mtd_bb1987 = 2
+
+
+@jit
+def ci_func(
+    ci,
+    lmr_z,
+    par_z,
+    gb_mol,
+    je,
+    cair,
+    oair,
+    rh_can,
+    p,
+    iv,
+    c,
+    c3flag=True,
+    stomatalcond_mtd=1,
+):
+    # Constants...
+    forc_pbot = 121000.0
+    medlynslope = 6.0
+    medlynintercept = 10000.0
+    vcmax_z = 62.5
+    cp = 4.275
+    kc = 40.49
+    ko = 27840.0
+    qe = 1.0
+    tpu_z = 31.5
+    kp_z = 1.0
+    bbb = 100.0
+    mbb = 9.0
+    theta_cj = 0.98
+    theta_ip = 0.95
+
+    # C3 or C4 photosynthesis
+    ac, aj, ap = lax.cond(
+        c3flag,
+        lambda _: (
+            vcmax_z * lax.max(ci - cp, 0.0) / (ci + kc * (1.0 + oair / ko)),
+            je * lax.max(ci - cp, 0.0) / (4.0 * ci + 8.0 * cp),
+            3.0 * tpu_z,
+        ),
+        lambda _: (vcmax_z, qe * par_z * 4.6, kp_z * lax.max(ci, 0.0) / forc_pbot),
+        None,
+    )
+
+    aquad = theta_cj
+    bquad = -(ac + aj)
+    cquad = ac * aj
+    r1, r2 = quadratic_roots(aquad, bquad, cquad)
+    ai = lax.min(r1, r2)
+
+    aquad = theta_ip
+    bquad = -(ai + ap)
+    cquad = ai * ap
+    r1, r2 = quadratic_roots(aquad, bquad, cquad)
+    ag = lax.max(0.0, lax.min(r1, r2))
+
+    an = ag - lmr_z
+    cs = cair - 1.4 / gb_mol * an * forc_pbot
+    fval, gs_mol = lax.cond(
+        an < 0.0,
+        lambda _: (0.0, 0.0),
+        lambda _: compute_fval_gsmol(
+            ci,
+            an,
+            cair,
+            gb_mol,
+            cs,
+            stomatalcond_mtd,
+            rh_can,
+            medlynslope,
+            medlynintercept,
+            bbb,
+            mbb,
+            forc_pbot,
+        ),
+        None,
+    )
+
+    return fval, gs_mol
+
+
+def compute_fval_gsmol(
+    ci,
+    an,
+    cair,
+    gb_mol,
+    cs,
+    stomatalcond_mtd,
+    rh_can,
+    medlynslope,
+    medlynintercept,
+    bbb,
+    mbb,
+    forc_pbot,
+):
+    cs = cair - 1.4 / gb_mol * an * forc_pbot
+    gs_mol = lax.cond(
+        stomatalcond_mtd == stomatalcond_mtd_medlyn2011,
+        lambda _: compute_gs_mol_medlyn2011(
+            an, cs, gb_mol, rh_can, medlynslope, medlynintercept, forc_pbot
+        ),
+        lambda _: compute_gs_mol_bb1987(an, cs, gb_mol, rh_can, bbb, mbb, forc_pbot),
+        None,
+    )
+
+    fval = ci - cair + an * forc_pbot * (1.4 / gb_mol + 1.6 / gs_mol)
+
+    return fval, gs_mol
+
+
+def compute_gs_mol_medlyn2011(
+    an, cs, gb_mol, rh_can, medlynslope, medlynintercept, forc_pbot
+):
+    term = 1.6 * an / (cs / forc_pbot * 1.0e06)
+    aquad = 1.0
+    bquad = -(
+        2.0 * (medlynintercept * 1.0e-06 + term)
+        + (medlynslope * term) ** 2 / (gb_mol * 1.0e-06 * rh_can)
+    )
+    cquad = (
+        medlynintercept**2 * 1.0e-12
+        + (2.0 * medlynintercept * 1.0e-06 + term * (1.0 - medlynslope**2 / rh_can))
+        * term
+    )
+    r1, r2 = quadratic_roots(aquad, bquad, cquad)
+    return lax.max(r1, r2) * 1.0e06
+
+
+def compute_gs_mol_bb1987(an, cs, gb_mol, rh_can, bbb, mbb, forc_pbot):
+    aquad = cs
+    bquad = cs * (gb_mol - bbb) - mbb * an * forc_pbot
+    cquad = -gb_mol * (cs * bbb + mbb * an * forc_pbot * rh_can)
+    r1, r2 = quadratic_roots(aquad, bquad, cquad)
+    return lax.max(r1, r2)
+
+
+@jit
+def main(
+    ci,
+    lmr_z,
+    par_z,
+    gb_mol,
+    je,
+    cair,
+    oair,
+    rh_can,
+    p,
+    iv,
+    c,
+    c3flag=True,
+    stomatalcond_mtd=1,
+):
+    ci_val, gs_mol, _ = hybrid(
+        ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c
+    )
+
+    return ci_val, gs_mol
