@@ -1,19 +1,19 @@
 import pytest
 import numpy as np
-from vjax import main
+from comparisons.vjax import main
 from functools import partial
 from jax import grad
 import plotly.graph_objects as go
 
 
 def test_ci_func():
-    ci = 35.
-    lmr_z = 4.
-    par_z = 500.
-    gb_mol = 50_000.
-    je = 40.
+    ci = 35.0
+    lmr_z = 4.0
+    par_z = 500.0
+    gb_mol = 50_000.0
+    je = 40.0
     cair = 45.0
-    oair = 21000.
+    oair = 21000.0
     rh_can = 0.40
     p = 1
     iv = 1
