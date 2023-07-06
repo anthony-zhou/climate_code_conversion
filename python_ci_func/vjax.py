@@ -1,11 +1,9 @@
 import math
 import numpy as np
 from jax import jit
+import jax.numpy as jnp
 
-# TODO: make this work. Currently it's not concretizable by jit.
 
-
-@jit
 def hybrid(x0, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c):
     eps = 1e-2
     eps1 = 1e-4
@@ -83,7 +81,6 @@ def hybrid(x0, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c):
     return x0, gs_mol, iter
 
 
-@jit
 def brent(
     x1,
     x2,
@@ -173,7 +170,7 @@ def brent(
         if abs(d) > tol1:
             b = b + d
         else:
-            b = b + np.sign(tol1, xm)
+            b = b + jnp.copysign(jnp.array([tol1]), jnp.array([xm]))[0]
 
         fb, gs_mol = ci_func(
             b, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, ip, iv, ic
@@ -189,15 +186,13 @@ def brent(
     return x, gs_mol
 
 
-@jit
 def quadratic_roots(a, b, c):
-    sqrt_discriminant = math.sqrt(b**2 - 4 * a * c)
+    sqrt_discriminant = jnp.sqrt(jnp.array([b**2 - 4 * a * c]))[0]
     root1 = (-b - sqrt_discriminant) / (2 * a)
     root2 = (-b + sqrt_discriminant) / (2 * a)
     return root1, root2
 
 
-@jit
 def ci_func(
     ci,
     lmr_z,
@@ -257,7 +252,7 @@ def ci_func(
     # Net photosynthesis
     an = ag - lmr_z
     if an < 0.0:
-        print("NEGATIVE PHOTOSYNTHESIS")
+        # print("NEGATIVE PHOTOSYNTHESIS")
         fval = 0.0
         return fval, None
 
@@ -291,12 +286,10 @@ def ci_func(
 
     # Derive new estimate for ci
     fval = ci - cair + an * forc_pbot * (1.4 / gb_mol + 1.6 / gs_mol)
-    print(f"[ci_func] ci={ci}, fval={fval}")
 
     return fval, gs_mol
 
 
-@jit
 def main(
     ci,
     lmr_z,
