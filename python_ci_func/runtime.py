@@ -33,7 +33,7 @@ def run_and_record(path):
 
             if hasattr(module, "main"):
                 results = []
-                for n in range(0, 1001, 100):
+                for n in range(0, 1001, 20):
                     start_time = time.time()
                     ci_val, gs_mol = 0, 0
                     for _ in range(0, n):

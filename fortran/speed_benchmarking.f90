@@ -1,5 +1,5 @@
 program speed_benchmarking
-    use PhotosynthesisMod, only: ci_func
+    use PhotosynthesisMod, only: hybrid
 
     implicit none
     double precision :: start_time, end_time, elapsed_time
@@ -19,12 +19,13 @@ program speed_benchmarking
 
     real(r8)     :: fval     ! return function of the value f(ci)
     real(r8)     :: gs_mol   ! leaf stomatal conductance (umol H2O/m**2/s)
+    integer :: iter              !number of iterations used, for record only
 
 
     integer :: unit_number
     character(len=40) :: filename
 
-    filename = 'speed_bencharking_fortran.txt'
+    filename = 'fortran_runtime.txt'
     unit_number = 10
     
     open(unit=unit_number, file=filename, action='write')    
@@ -44,14 +45,14 @@ program speed_benchmarking
     
 
     
-    do n = 0, 1000, 100
+    do n = 0, 1000, 20
         call cpu_time(start_time)
         do i = 0, n
-            call ci_func(ci, fval, p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol)
+            call hybrid(ci, p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, iter)
         end do
         call cpu_time(end_time)
         elapsed_time = end_time - start_time
-        write(unit_number, *) n, ',', elapsed_time
+        write(unit_number, *) ci, ',', gs_mol, ',', n, ',', elapsed_time
     end do
     
     close(unit_number)
