@@ -41,13 +41,17 @@ def test_ci_func():
     x = np.linspace(20, 100, 50)
     y = [gs_mol(x) for x in x]
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=x, y=y, name="gs_mol"))
+    fig.add_trace(go.Scatter(x=x, y=y, name="gs_mol (umol/m2/s)"))
     fig.add_trace(
         go.Scatter(
             x=x,
             y=[grad(gs_mol)(x) for x in x],
-            name="(d gs_mol) / (d c_air)",
+            name="derivative of gs_mol (umol/m2/s)/Pa",
         )
+    )
+    fig.update_xaxes(title_text="Atmospheric partial pressure of CO2 (Pa)")
+    fig.update_layout(
+        title="Change in stomatal conductance with respect to atmospheric partial pressure"
     )
     fig.show()
 
