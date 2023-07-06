@@ -33,16 +33,30 @@ def run_and_record(path):
 
             if hasattr(module, "main"):
                 results = []
-                for n in range(0, 1001, 20):
-                    start_time = time.time()
+                for n in range(0, 1001, 50):
+                    total_runtime = 0
                     ci_val, gs_mol = 0, 0
-                    for _ in range(0, n):
-                        ci_val, gs_mol = module.main(
-                            ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c
-                        )
-                    end_time = time.time()
-                    runtime = end_time - start_time
-                    results.append((ci_val, gs_mol, n, runtime))
+                    for _ in range(5):  # Loop for 5 runs
+                        start_time = time.time()
+                        for _ in range(0, n):
+                            ci_val, gs_mol = module.main(
+                                ci,
+                                lmr_z,
+                                par_z,
+                                gb_mol,
+                                je,
+                                cair,
+                                oair,
+                                rh_can,
+                                p,
+                                iv,
+                                c,
+                            )
+                        end_time = time.time()
+                        runtime = end_time - start_time
+                        total_runtime += runtime
+                    average_runtime = total_runtime / 5  # Compute the average runtime
+                    results.append((ci_val, gs_mol, n, average_runtime))
 
                 with open(f"{path}/{module_name}_runtime.txt", "w") as f:
                     for ci_val, gs_mol, n, runtime in results:
@@ -65,18 +79,22 @@ def plot_runtimes(path):
         file_df = dataframes[file]
         fig.add_trace(
             go.Scatter(
-                x=file_df["Trials"],
-                y=file_df["Runtime"],
+                # Ignore the first trial, which is when numba gets initialized.
+                x=file_df["Trials"][2:],
+                y=file_df["Runtime"][2:],
                 mode="lines",
                 name=file,
             )
         )
 
     fig.update_layout(
-        title="Runtime of ci solver across multiple trials",
+        title="Runtime of ci solver (averaged across 5 runs)",
         xaxis_title="Number of Trials",
         yaxis_title="Runtime (s)",
     )
+
+    # fig.update_xaxes(type="log")
+    # fig.update_yaxes(type="log")
 
     fig.show()
 

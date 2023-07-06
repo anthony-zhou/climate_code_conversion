@@ -142,7 +142,7 @@ def solve_ci(ci, f):
     # fig.update_layout(title="ci_func", xaxis_title="ci", yaxis_title="fval")
     # fig.write_image("./fig4.png")
 
-    sol = root_scalar(f, bracket=[lower, 90.0], method="brentq")
+    sol = root_scalar(f, bracket=[lower, 90.0], method="brentq", rtol=1e-2)
 
     return sol.root
 
