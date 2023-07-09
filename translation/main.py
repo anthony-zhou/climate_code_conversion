@@ -1,4 +1,8 @@
 import translation.ast.dag
+import typer
+import textwrap
+
+app = typer.Typer()
 
 
 def get_input_args():
@@ -23,19 +27,25 @@ def options_menu(options: list[str]):
             pass
 
 
-def translate_internal(func):
+def translate_internal(func: str, source: str, outfile):
+    print(f"Translating {func}")
     # TODO: start the translation loop for this function.
-    pass
+    func_body = textwrap.dedent(
+        f"""\
+    def {func}():
+        pass
+    """
+    )
+
+    # Write function to the appropriate location (top of the open file)
+    with open(outfile, "a") as f:
+        f.write("\n")
+        f.write(func_body)
+        f.write("\n")
 
 
-if __name__ == "__main__":
-    # Ask what file the user wants
-    filename = get_input_args()
-
-    # Open the output file (this should be done on a new branch, ideally)
-    # outfile = open_file(filename)
-
-    # Generate a DAG within the file, for each public function. For now, just have the user select one function to translate.
+@app.command()
+def main(filename: str = "./ast/tests/SampleMod.f90"):
     dag = translation.ast.dag.DAG(filename)
 
     function_name = options_menu(dag.public_functions)
@@ -52,17 +62,26 @@ if __name__ == "__main__":
     # - leave a TODO comment and define the function later
     # - supply your own function
 
-    for func in externals:
-        # TODO: implement this
-        pass
+    if len(externals) > 0:
+        print("Translating external dependencies")
+        for func, item in externals:
+            # TODO: implement this
+            continue
 
-    # For each internal dependency, translate with a unit test.
+    if len(internals) > 0:
+        print("Translating internal dependencies")
+        # For each internal dependency, translate with a unit test.
+        for func, item in internals:
+            translate_internal(func, item["source"], "./out.py")
+            continue
 
-    for func in internals:
-        translate_internal(func)
     # Generate unit test, write to test/test_photosynthesis.py
     # iterate code until it passes or converges on unit tests, commiting to git each time
     # Write to file
     # Let human make updates before continuing
 
     # Would you like to translate another function?
+
+
+if __name__ == "__main__":
+    app()

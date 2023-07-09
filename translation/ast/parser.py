@@ -7,6 +7,8 @@ from fparser.two import Fortran2003
 from fparser.two import Fortran2003
 import networkx as nx
 
+from . import parser_types
+
 
 def _get_parse_tree(file_path):
     f2003_parser = ParserFactory().create(std="f2003")
@@ -114,7 +116,9 @@ def get_sorted_functions(source_file):
     ]
 
 
-def filter_for_dependencies(dag: nx.DiGraph, function_name: str):
+def filter_for_dependencies(
+    dag: nx.DiGraph, function_name: str
+) -> list[tuple[str, parser_types.Dependency]]:
     """
     Given a function name, return a topologically sorted list of the function's dependencies.
 
@@ -134,7 +138,7 @@ def filter_for_dependencies(dag: nx.DiGraph, function_name: str):
 
     sorted_keys: list[str] = list(nx.topological_sort(dag))
 
-    result = [
+    result: list[tuple[str, parser_types.Dependency]] = [
         (key, dag.nodes.get(key, {"source": "not_found", "calls": []}))
         for key in sorted_keys
         if key in node_list
