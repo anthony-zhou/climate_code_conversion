@@ -1,9 +1,4 @@
-import math
-import numpy as np
-from jax import jit, grad
 import jax.numpy as jnp
-from functools import partial
-import scipy.optimize
 
 
 def hybrid(x0, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c):
@@ -292,36 +287,6 @@ def ci_func(
     return fval, gs_mol
 
 
-def newton(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c):
-    # First find derivative with respect to ci
-    ci_func_partial = partial(
-        ci_func,
-        # ci=ci,
-        lmr_z=lmr_z,
-        par_z=par_z,
-        gb_mol=gb_mol,
-        je=je,
-        cair=cair,
-        oair=oair,
-        rh_can=rh_can,
-        p=p,
-        iv=iv,
-        c=c,
-    )
-
-    def fval(x):
-        return ci_func_partial(x)[0]
-
-    df = grad(fval)
-    fprime2 = grad(df)
-
-    ci_val = scipy.optimize.newton(fval, ci, fprime=df, fprime2=fprime2, rtol=1e-2)
-    print(ci_val)
-    _, gs_mol = ci_func_partial(ci_val)
-
-    return ci_val, gs_mol
-
-
 def main(
     ci,
     lmr_z,
@@ -337,9 +302,8 @@ def main(
     c3flag=True,
     stomatalcond_mtd=1,
 ):
-    # ci_val, gs_mol, _ = hybrid(
-    #     ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c
-    # )
-    ci_val, gs_mol = newton(ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c)
+    ci_val, gs_mol, _ = hybrid(
+        ci, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c
+    )
 
     return ci_val, gs_mol

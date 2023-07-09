@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from comparisons.vjax import main
+from vjax_numba import main
 from functools import partial
 from jax import grad
 import plotly.graph_objects as go
