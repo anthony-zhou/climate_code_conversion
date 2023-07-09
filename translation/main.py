@@ -102,7 +102,7 @@ def main(filename: str = "./translation/ast/tests/SampleMod.f90"):
                 f.write("\n")
 
             repo = Repo(os.getcwd())
-            repo.index.add([outfile])
+            repo.index.add([os.getcwd() + "/" + outfile])
             repo.index.commit(f"[AI] Created {func} in {outfile}")
 
             testfile = "test_out.py"
@@ -112,7 +112,7 @@ def main(filename: str = "./translation/ast/tests/SampleMod.f90"):
                 f.write("\n")
 
             repo = Repo(os.getcwd())
-            repo.index.add([testfile])
+            repo.index.add([os.getcwd() + "/" + testfile])
             repo.index.commit(f"[AI] Created test_{func} in {testfile}")
             # Let human make edits to make the unit tests pass
             continue
