@@ -5749,3 +5749,14 @@ tmp5a8jk2c3.py [31mF[0m[31mF[0m[32m.[0m[31mF[0m[31mF[0m[31m          
 [31m========================= [31m[1m4 failed[0m, [32m1 passed[0m[31m in 0.14s[0m[31m ==========================[0m
 
 2023-06-26 17:35:57.740 | INFO     | __main__:generate_python_code:213 - Done. Output saved to ./output/translations/ci_func_vihnznlrlq.csv.
+2023-07-09 13:55:35.868 | INFO     | translation.llm:_translate_function_to_python:96 - Translating function to Python...
+2023-07-09 13:55:35.871 | DEBUG    | translation.prompts.messages:translate_to_python_messages:123 - PROMPT: 
+    Convert the following Fortran function to Python. ```
+
+  REAL(KIND = r8) FUNCTION sum(a, b)
+  REAL(KIND = r8), INTENT(IN) :: a, b
+
+  sum = a + b
+END FUNCTION sum```
+
+    
