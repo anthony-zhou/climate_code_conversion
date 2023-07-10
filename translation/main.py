@@ -5,8 +5,8 @@ import os
 import random
 
 import translation.ast.dag
-import translation.llm as llm
-import translation.testing as testing
+from translation.llm import translate, generate_unit_tests, iterate
+from translation.testing import run_tests
 
 app = typer.Typer()
 
@@ -49,15 +49,6 @@ def translate_internal(func: str, source: str, outfile):
     repo.index.commit(f"[AI] Created {func} in {outfile}")
 
 
-def generate_unit_tests(translation: str, outfile: str):
-    unit_tests = textwrap.dedent(
-        f"""\
-    def test_{random.randint(0, 1000)}():
-        assert 1 == 1
-    """
-    )
-
-
 @app.command()
 def main(filename: str = "./translation/ast/tests/SampleMod.f90"):
     dag = translation.ast.dag.DAG(filename)
@@ -85,8 +76,26 @@ def main(filename: str = "./translation/ast/tests/SampleMod.f90"):
     if len(internals) > 0:
         print("Translating internal dependencies")
         # For each internal dependency, translate with a unit test.
-        for func, item in internals:
+        for func_name, dependency in internals:
             # Translate the function using LLM, writing to file with each iteration
+
+            python_function = translate(dependency.source)
+            write_to_file(python_function, "./out.py")
+
+            while True:
+                # Generate unit test, write to test/test_photosynthesis.py
+                python_unit_tests = generate_unit_tests(python_function)
+                write_to_file(python_unit_tests, "./test_out.py")
+
+                # Run unit tests
+                pytest_output = run_tests(python_function, python_unit_tests, docker_image="python:3.8")
+                print(pytest_output)
+
+                # Let human make edits to make the unit tests pass
+                response = typer.prompt("Would you like to continue? [y/N]: ")
+                if response.lower() == "y":
+                    break
+
             python_function = llm._translate_function_to_python(item["source"])
             python_unit_tests = llm.generate_unit_tests(python_function)
             pytest_output = testing.run_tests(

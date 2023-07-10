@@ -3,6 +3,14 @@ import tempfile
 import os
 import re
 from translation.utils import logger
+import textwrap
+
+from enum import Enum
+
+
+class TestResult(Enum):
+    PASSED = 1
+    FAILED = 2
 
 
 def _extract_pytest_output(output):
@@ -35,11 +43,14 @@ def _run_tests_in_docker(source_code, docker_image):
         temp.write(source_code.encode("utf-8"))
         temp_filename = temp.name
 
-
     # Define the commands to run
+    # commands = f"""
+    # pip install pytest numpy jaxlib
+    # pip install --upgrade "jax[cpu]"
+    # pytest {os.path.basename(temp_filename)}
+    # """
     commands = f"""
-    pip install pytest numpy jaxlib
-    pip install --upgrade "jax[cpu]"
+    pip install pytest numpy
     pytest {os.path.basename(temp_filename)} 
     """
 
@@ -52,14 +63,14 @@ def _run_tests_in_docker(source_code, docker_image):
         working_dir="/tests",
     )
     logger.debug(f"Running tests in Docker container {container.id}...")
-    container.start() # type: ignore
+    container.start()  # type: ignore
 
     # Wait for the container to finish and capture the output
-    result = container.wait() # type: ignore
-    output = container.logs() # type: ignore
+    result = container.wait()  # type: ignore
+    output = container.logs()  # type: ignore
 
     # Clean up
-    container.remove() # type: ignore
+    container.remove()  # type: ignore
     # os.remove(temp_filename)
 
     return output.decode("utf-8")
@@ -72,26 +83,39 @@ def run_tests(source_code, unit_tests, docker_image):
 
     result = _extract_pytest_output(output)
 
-    return result
+    logger.trace(result)
+
+    if "FAILED" in result:
+        return TestResult.FAILED, result
+    else:
+        return TestResult.PASSED, result
 
 
-if __name__ == '__main__':
-    source_code = """
-import jax
-import jax.numpy as jnp
+if __name__ == "__main__":
+    source_code = textwrap.dedent(
+        """\
+    import numpy as np
 
-def make_numbers(n=10):
-    x = jnp.arange(n)
-    return x
-"""
-    unit_tests = """
-import pytest
+    def average(x):
+        return np.mean(x)
+    """
+    )
+    unit_tests = textwrap.dedent(
+        """\
+    import pytest
 
-def test_make_numbers():
-    x = make_numbers(10)
+    def test_average():
+        x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
-    assert len(x) == 10
-"""
+        assert average(x) == np.mean(x)
+    
+    def test_average2():
+        x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
-    result = run_tests(source_code, unit_tests, "python:3.8")
+        assert average(x) == 0
+    """
+    )
+
+    status, result = run_tests(source_code, unit_tests, "python:3.8")
+    logger.debug(status)
     logger.debug(result)
