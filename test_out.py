@@ -454,3 +454,41 @@ def test_quadratic():
     # Test case 54: a = 0, b = 1, c = 0
     a = 0
     b = 1
+
+import pytest
+from module_under_test import ci_func
+
+def test_ci_func():
+    # Test case 1: ci = 0, ca = 0, rb = 0, rs = 0, patm = 0, an = 0
+    assert ci_func(0) == 10.0
+
+    # Test case 2: ci = 1, ca = 2, rb = 3, rs = 4, patm = 5, an = 6
+    assert ci_func(1) == 10.0
+
+    # Test case 3: ci = -1, ca = -2, rb = -3, rs = -4, patm = -5, an = -6
+    assert ci_func(-1) == 10.0
+
+    # Test case 4: ci = 10, ca = 10, rb = 10, rs = 10, patm = 10, an = 10
+    assert ci_func(10) == 10.0
+
+    # Test case 5: ci = 100, ca = 100, rb = 100, rs = 100, patm = 100, an = 100
+    assert ci_func(100) == 10.0
+
+    # Test case 6: ci = -100, ca = -100, rb = -100, rs = -100, patm = -100, an = -100
+    assert ci_func(-100) == 10.0
+
+    # Test case 7: ci = 0.5, ca = 0.5, rb = 0.5, rs = 0.5, patm = 0.5, an = 0.5
+    assert ci_func(0.5) == 10.0
+
+    # Test case 8: ci = -0.5, ca = -0.5, rb = -0.5, rs = -0.5, patm = -0.5, an = -0.5
+    assert ci_func(-0.5) == 10.0
+
+    # Test case 9: ci = 0.123456789, ca = 0.987654321, rb = 0.111111111, rs = 0.222222222, patm = 0.333333333, an = 0.444444444
+    assert ci_func(0.123456789) == 10.0
+
+    # Test case 10: ci = -0.123456789, ca = -0.987654321, rb = -0.111111111, rs = -0.222222222, patm = -0.333333333, an = -0.444444444
+    assert ci_func(-0.123456789) == 10.0
+
+if __name__ == "__main__":
+    pytest.main()
+
