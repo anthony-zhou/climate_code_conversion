@@ -5760,3 +5760,305 @@ tmp5a8jk2c3.py [31mF[0m[31mF[0m[32m.[0m[31mF[0m[31mF[0m[31m          
 END FUNCTION sum```
 
     
+2023-07-09 14:19:06.879 | INFO     | translation.llm:_translate_function_to_python:96 - Translating function to Python...
+2023-07-09 14:19:06.880 | DEBUG    | translation.prompts.messages:translate_to_python_messages:123 - PROMPT: 
+    Convert the following Fortran function to Python. ```
+
+  REAL(KIND = r8) FUNCTION sum(a, b)
+  REAL(KIND = r8), INTENT(IN) :: a, b
+
+  sum = a + b
+END FUNCTION sum```
+
+    
+2023-07-09 14:23:07.518 | INFO     | translation.llm:_translate_function_to_python:96 - Translating function to Python...
+2023-07-09 14:23:07.520 | DEBUG    | translation.prompts.messages:translate_to_python_messages:123 - PROMPT: 
+    Convert the following Fortran function to Python. ```
+
+  REAL(KIND = r8) FUNCTION sum(a, b)
+  REAL(KIND = r8), INTENT(IN) :: a, b
+
+  sum = a + b
+END FUNCTION sum```
+
+    
+2023-07-10 18:34:26.909 | INFO     | translation.llm:_translate_function_to_python:96 - Translating function to Python...
+2023-07-10 18:34:26.911 | DEBUG    | translation.prompts.messages:translate_to_python_messages:123 - PROMPT: 
+    Convert the following Fortran function to Python. ```
+
+  REAL(KIND = r8) FUNCTION sum(a, b)
+  REAL(KIND = r8), INTENT(IN) :: a, b
+
+  sum = a + b
+END FUNCTION sum```
+
+    
+2023-07-10 18:35:12.218 | INFO     | translation.llm:_translate_function_to_python:100 - Translating function to Python...
+2023-07-10 18:35:12.220 | DEBUG    | translation.prompts.messages:translate_to_python_messages:123 - PROMPT: 
+    Convert the following Fortran function to Python. ```
+
+  REAL(KIND = r8) FUNCTION sum(a, b)
+  REAL(KIND = r8), INTENT(IN) :: a, b
+
+  sum = a + b
+END FUNCTION sum```
+
+    
+2023-07-10 18:37:01.412 | INFO     | translation.llm:_translate_function_to_python:100 - Translating function to Python...
+2023-07-10 18:37:01.414 | DEBUG    | translation.prompts.messages:translate_to_python_messages:123 - PROMPT: 
+    Convert the following Fortran function to Python. ```
+
+  REAL(KIND = r8) FUNCTION sum(a, b)
+  REAL(KIND = r8), INTENT(IN) :: a, b
+
+  sum = a + b
+END FUNCTION sum```
+
+    
+2023-07-10 18:37:49.758 | INFO     | translation.llm:_translate_function_to_python:100 - Translating function to Python...
+2023-07-10 18:37:49.758 | DEBUG    | translation.prompts.messages:translate_to_python_messages:123 - PROMPT: 
+    Convert the following Fortran function to Python. ```
+
+  REAL(KIND = r8) FUNCTION sum(a, b)
+  REAL(KIND = r8), INTENT(IN) :: a, b
+
+  sum = a + b
+END FUNCTION sum```
+
+    
+2023-07-10 18:45:02.455 | INFO     | translation.llm:_translate_function_to_python:106 - Translating function to Python...
+2023-07-10 18:45:02.457 | DEBUG    | translation.prompts.messages:translate_to_python_messages:123 - PROMPT: 
+    Convert the following Fortran function to Python. ```
+
+  REAL(KIND = r8) FUNCTION sum(a, b)
+  REAL(KIND = r8), INTENT(IN) :: a, b
+
+  sum = a + b
+END FUNCTION sum```
+
+    
+2023-07-10 18:45:57.047 | INFO     | translation.llm:_translate_function_to_python:110 - Translating function to Python...
+2023-07-10 18:45:57.048 | DEBUG    | translation.prompts.messages:translate_to_python_messages:123 - PROMPT: 
+    Convert the following Fortran function to Python. ```
+
+  REAL(KIND = r8) FUNCTION sum(a, b)
+  REAL(KIND = r8), INTENT(IN) :: a, b
+
+  sum = a + b
+END FUNCTION sum```
+
+    
+2023-07-10 18:47:42.172 | INFO     | translation.llm:_translate_function_to_python:110 - Translating function to Python...
+2023-07-10 18:47:42.174 | DEBUG    | translation.prompts.messages:translate_to_python_messages:123 - PROMPT: 
+    Convert the following Fortran function to Python. ```
+
+  REAL(KIND = r8) FUNCTION sum(a, b)
+  REAL(KIND = r8), INTENT(IN) :: a, b
+
+  sum = a + b
+END FUNCTION sum```
+
+    
+2023-07-10 18:47:44.794 | DEBUG    | translation.llm:_translate_function_to_python:118 - COMPLETION: Here's the Python equivalent of the given Fortran function:
+
+```python
+def sum(a, b):
+    return a + b
+```
+
+In Python, you don't need to specify the data type of the function or the input arguments explicitly.
+2023-07-10 18:47:44.795 | INFO     | translation.llm:_generate_fortran_unit_tests:51 - Generating unit tests in Fortran...
+2023-07-10 18:47:44.795 | DEBUG    | translation.prompts.messages:fortran_unit_test_messages:47 - PROMPT: 
+    Given fortran code, write unit tests using funit.
+
+    Example:
+    FORTRAN CODE:
+    ```
+    module fac
+        implicit none
+        
+        contains
+
+        recursive function factorial(n) result(fact)
+            integer, intent(in) :: n
+            integer :: fact
+
+            if (n == 0) then
+            fact = 1
+            else
+            fact = n * factorial(n - 1)
+            end if
+        end function factorial
+    end module fac
+    ```
+
+    FORTRAN TESTS:
+    ```
+    @test
+    subroutine test_fac()
+        use funit
+
+        @assertEqual(120, factorial(5), 'factorial(5)')
+        @assertEqual(1, factorial(1), 'factorial(1)')
+        @assertEqual(1, factorial(0), 'factorial(0)')
+
+    end subroutine test_fac
+    ```
+
+    Your turn:
+    FORTRAN CODE:
+```
+def sum(a, b):
+    return a + b
+
+```
+
+    FORTRAN TESTS:
+    
+2023-07-10 18:47:47.533 | DEBUG    | translation.llm:_generate_fortran_unit_tests:59 - COMPLETION: ```
+@test
+subroutine test_sum()
+    use funit
+
+    @assertEqual(5, sum(2, 3), 'sum(2, 3)')
+    @assertEqual(10, sum(5, 5), 'sum(5, 5)')
+    @assertEqual(0, sum(-5, 5), 'sum(-5, 5)')
+
+end subroutine test_sum
+```
+2023-07-10 18:47:47.533 | INFO     | translation.llm:_translate_tests_to_python:86 - Translating unit tests to Python...
+2023-07-10 18:47:47.534 | DEBUG    | translation.prompts.messages:translate_tests_to_python_messages:141 - PROMPT: 
+    Convert the following unit tests from Fortran to Python using pytest. No need to import the module under test. ```
+
+@test
+subroutine test_sum()
+    use funit
+
+    @assertEqual(5, sum(2, 3), 'sum(2, 3)')
+    @assertEqual(10, sum(5, 5), 'sum(5, 5)')
+    @assertEqual(0, sum(-5, 5), 'sum(-5, 5)')
+
+end subroutine test_sum
+```
+
+    
+2023-07-10 18:47:50.430 | DEBUG    | translation.llm:_translate_tests_to_python:96 - COMPLETION: Here's the converted unit test from Fortran to Python using pytest:
+
+```python
+import pytest
+
+def test_sum():
+    assert sum(2, 3) == 5
+    assert sum(5, 5) == 10
+    assert sum(-5, 5) == 0
+```
+
+Note that you will need to import the module under test in order to use the `sum` function.
+2023-07-10 18:47:50.432 | INFO     | translation.testing:run_tests:69 - Running tests using docker image python:3.8
+2023-07-10 18:50:46.122 | INFO     | translation.llm:_translate_function_to_python:110 - Translating function to Python...
+2023-07-10 18:50:46.124 | DEBUG    | translation.prompts.messages:translate_to_python_messages:123 - PROMPT: 
+    Convert the following Fortran function to Python. ```
+
+  REAL(KIND = r8) FUNCTION sum(a, b)
+  REAL(KIND = r8), INTENT(IN) :: a, b
+
+  sum = a + b
+END FUNCTION sum```
+
+    
+2023-07-10 18:50:48.506 | DEBUG    | translation.llm:_translate_function_to_python:118 - COMPLETION: Here's the Python equivalent of the given Fortran function:
+
+```python
+def sum(a, b):
+    return a + b
+```
+
+In Python, you don't need to specify the data type of the function or the input arguments explicitly.
+2023-07-10 18:50:48.507 | INFO     | translation.llm:_generate_fortran_unit_tests:51 - Generating unit tests in Fortran...
+2023-07-10 18:50:48.507 | DEBUG    | translation.prompts.messages:fortran_unit_test_messages:47 - PROMPT: 
+    Given fortran code, write unit tests using funit.
+
+    Example:
+    FORTRAN CODE:
+    ```
+    module fac
+        implicit none
+        
+        contains
+
+        recursive function factorial(n) result(fact)
+            integer, intent(in) :: n
+            integer :: fact
+
+            if (n == 0) then
+            fact = 1
+            else
+            fact = n * factorial(n - 1)
+            end if
+        end function factorial
+    end module fac
+    ```
+
+    FORTRAN TESTS:
+    ```
+    @test
+    subroutine test_fac()
+        use funit
+
+        @assertEqual(120, factorial(5), 'factorial(5)')
+        @assertEqual(1, factorial(1), 'factorial(1)')
+        @assertEqual(1, factorial(0), 'factorial(0)')
+
+    end subroutine test_fac
+    ```
+
+    Your turn:
+    FORTRAN CODE:
+```
+def sum(a, b):
+    return a + b
+
+```
+
+    FORTRAN TESTS:
+    
+2023-07-10 18:50:50.992 | DEBUG    | translation.llm:_generate_fortran_unit_tests:59 - COMPLETION: ```
+@test
+subroutine test_sum()
+    use funit
+
+    @assertEqual(5, sum(2, 3), 'sum(2, 3)')
+    @assertEqual(10, sum(5, 5), 'sum(5, 5)')
+    @assertEqual(0, sum(-5, 5), 'sum(-5, 5)')
+
+end subroutine test_sum
+```
+2023-07-10 18:50:50.993 | INFO     | translation.llm:_translate_tests_to_python:86 - Translating unit tests to Python...
+2023-07-10 18:50:50.993 | DEBUG    | translation.prompts.messages:translate_tests_to_python_messages:141 - PROMPT: 
+    Convert the following unit tests from Fortran to Python using pytest. No need to import the module under test. ```
+
+@test
+subroutine test_sum()
+    use funit
+
+    @assertEqual(5, sum(2, 3), 'sum(2, 3)')
+    @assertEqual(10, sum(5, 5), 'sum(5, 5)')
+    @assertEqual(0, sum(-5, 5), 'sum(-5, 5)')
+
+end subroutine test_sum
+```
+
+    
+2023-07-10 18:50:54.181 | DEBUG    | translation.llm:_translate_tests_to_python:96 - COMPLETION: Here's the converted unit test from Fortran to Python using pytest:
+
+```python
+import pytest
+
+def test_sum():
+    assert sum(2, 3) == 5
+    assert sum(5, 5) == 10
+    assert sum(-5, 5) == 0
+```
+
+Note that you will need to import the module under test in order to use the `sum` function.
+2023-07-10 18:50:54.182 | INFO     | translation.testing:run_tests:69 - Running tests using docker image python:3.8
