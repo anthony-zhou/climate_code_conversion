@@ -6,9 +6,17 @@ import random
 
 import translation.ast.dag
 from translation.llm import translate, generate_unit_tests, iterate
-from translation.testing import run_tests
+from translation.testing import run_tests, TestResult
 
 app = typer.Typer()
+
+from translation.utils import logger
+from yaspin import yaspin
+
+import sys
+
+logger.remove()
+logger.add(sys.stderr, level="INFO")
 
 
 def options_menu(options: list[str]):
@@ -28,30 +36,20 @@ def options_menu(options: list[str]):
             pass
 
 
-def translate_internal(func: str, source: str, outfile):
-    print(f"Translating {func}")
-    # TODO: start the translation loop for this function.
-    func_body = textwrap.dedent(
-        f"""\
-    def {func}():
-        pass
-    """
-    )
-
-    # Write function to the appropriate location (top of the open file)
+def write_to_file(source_code: str, outfile: str):
     with open(outfile, "a") as f:
         f.write("\n")
-        f.write(func_body)
+        f.write(source_code)
         f.write("\n")
-
-    repo = Repo(os.getcwd())
-    repo.index.add([outfile])
-    repo.index.commit(f"[AI] Created {func} in {outfile}")
 
 
 @app.command()
-def main(filename: str = "./translation/ast/tests/SampleMod.f90"):
-    dag = translation.ast.dag.DAG(filename)
+def main(
+    input_file: str = "./examples/fibonacci/fortran/fibonacci.f90",
+    output_file: str = "./examples/fibonacci/python/fibonacci.py",
+    output_test_file: str = "./examples/fibonacci/python/test_fibonacci.py",
+):
+    dag = translation.ast.dag.DAG(input_file)
 
     function_name = options_menu(dag.public_functions)
 
@@ -66,6 +64,8 @@ def main(filename: str = "./translation/ast/tests/SampleMod.f90"):
     # - generate function from context
     # - leave a TODO comment and define the function later
     # - supply your own function
+    print(externals)
+    print(internals)
 
     if len(externals) > 0:
         print("Translating external dependencies")
@@ -75,54 +75,31 @@ def main(filename: str = "./translation/ast/tests/SampleMod.f90"):
 
     if len(internals) > 0:
         print("Translating internal dependencies")
-        # For each internal dependency, translate with a unit test.
         for func_name, dependency in internals:
-            # Translate the function using LLM, writing to file with each iteration
+            with yaspin(text=f"Translating {func_name}...") as spinner:
+                python_function = translate(dependency["source"])
+                write_to_file(python_function, output_file)
+                while True:
+                    python_unit_tests = generate_unit_tests(python_function)
+                    write_to_file(python_unit_tests, output_test_file)
 
-            python_function = translate(dependency.source)
-            write_to_file(python_function, "./out.py")
+                    test_result, pytest_output = run_tests(
+                        python_function, python_unit_tests, docker_image="python:3.8"
+                    )
 
-            while True:
-                # Generate unit test, write to test/test_photosynthesis.py
-                python_unit_tests = generate_unit_tests(python_function)
-                write_to_file(python_unit_tests, "./test_out.py")
+                    print(pytest_output)
 
-                # Run unit tests
-                pytest_output = run_tests(python_function, python_unit_tests, docker_image="python:3.8")
-                print(pytest_output)
+                    if test_result == TestResult.PASSED:
+                        break
+                    else:
+                        response = typer.prompt("Would you like to continue? [y/N]: ")
+                        if response.lower() == "y":
+                            break
 
-                # Let human make edits to make the unit tests pass
-                response = typer.prompt("Would you like to continue? [y/N]: ")
-                if response.lower() == "y":
-                    break
+            # repo = Repo(os.getcwd())
+            # repo.index.add([os.getcwd() + "/" + outfile])
+            # repo.index.commit(f"[AI] Created {func} in {outfile}")
 
-            python_function = llm._translate_function_to_python(item["source"])
-            python_unit_tests = llm.generate_unit_tests(python_function)
-            pytest_output = testing.run_tests(
-                python_function, python_unit_tests, "python:3.8"
-            )
-            print(pytest_output)
-
-            # Ignore iterations for now, just write to a file
-            outfile = "out.py"
-            with open(outfile, "a") as f:
-                f.write("\n")
-                f.write(python_function)
-                f.write("\n")
-
-            repo = Repo(os.getcwd())
-            repo.index.add([os.getcwd() + "/" + outfile])
-            repo.index.commit(f"[AI] Created {func} in {outfile}")
-
-            testfile = "test_out.py"
-            with open(testfile, "a") as f:
-                f.write("\n")
-                f.write(python_unit_tests)
-                f.write("\n")
-
-            repo = Repo(os.getcwd())
-            repo.index.add([os.getcwd() + "/" + testfile])
-            repo.index.commit(f"[AI] Created test_{func} in {testfile}")
             # Let human make edits to make the unit tests pass
             continue
 
