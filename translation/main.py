@@ -79,20 +79,6 @@ def main(
             # Let human make edits to make the unit tests pass
             continue
 
-        # python_translations = [
-        #     translate_internal(func, item["source"], "./out.py")
-        #     for func, item in internals
-        # ]
-        # for translation in python_translations:
-        #     generate_unit_tests(translation, "./test_out.py")
-
-    # Generate unit test, write to test/test_photosynthesis.py
-    # iterate code until it passes or converges on unit tests, commiting to git each time
-    # Write to file
-    # Let human make updates before continuing
-
-    # Would you like to translate another function?
-
 
 if __name__ == "__main__":
     app()

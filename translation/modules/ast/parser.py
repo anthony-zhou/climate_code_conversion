@@ -73,7 +73,6 @@ def traverse_function_calls(node, functions, func_name=None):
         func_name = get_function_name(node)
     if is_function_call(node, functions):
         called = str(node.items[0]).lower()
-        print("Called function ", called, " of type ", type(node))
         if func_name is not None:
             yield (func_name, called)
         else:
