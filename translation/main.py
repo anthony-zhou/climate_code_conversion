@@ -1,3 +1,4 @@
+import rich
 import typer
 import textwrap
 from git.repo import Repo
@@ -20,7 +21,7 @@ logger.add(sys.stderr, level="INFO")
 
 
 @app.command()
-def main(
+def migrate(
     input_file: str = "./examples/fibonacci/fortran/fibonacci.f90",
     output_file: str = "./examples/fibonacci/python/fibonacci.py",
     output_test_file: str = "./examples/fibonacci/python/test_fibonacci.py",
@@ -78,6 +79,22 @@ def main(
 
             # Let human make edits to make the unit tests pass
             continue
+
+
+@app.command()
+def analyze(
+    repo_path="./",
+    file_path="examples/fibonacci/python/fibonacci.py",
+):
+    """
+    Analyze the codebase to see how much of it was written by AI, using git blame.
+    """
+    repo = Repo(repo_path)
+    blame = repo.blame("HEAD", file_path)
+    total_lines = sum(len(lines) for _, lines in blame)  # type: ignore
+    ai_lines = sum(len(lines) for commit, lines in blame if commit.message.startswith("[AI]"))  # type: ignore
+    percentage = (ai_lines / total_lines) * 100
+    rich.print(f":robot: {percentage:.2f}% of the code was written by AI")
 
 
 if __name__ == "__main__":
