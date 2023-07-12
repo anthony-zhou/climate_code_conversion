@@ -1,38 +1,15 @@
-import random
-import string
-
-# import openai
-import os
-import dotenv
-
-import translation.testing as testing
+import translation.modules.testing as testing
 import translation.utils as utils
 from translation.utils import logger
 import logging
 import translation.prompts.messages
-
-
-logger.add("llm_outputs.log")
-
 from tenacity import (
     retry,
     stop_after_attempt,
     wait_random_exponential,
     before_sleep_log,
-)  # for exponential backoff
-
-import promptlayer
-
-dotenv.load_dotenv()
-
-promptlayer.api_key = os.environ.get("PROMPTLAYER_API_KEY")
-
-# Swap out your 'import openai'
-openai = promptlayer.openai
-openai.api_key = os.environ.get("OPENAI_API_KEY")
-
-model_name = "gpt-3.5-turbo"
-
+)
+from translation.config import openai, model_name
 
 logging_logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -58,7 +35,7 @@ def generate_unit_tests(python_function: str):
         temperature=0.0,
     )
 
-    logger.trace(f'COMPLETION: {completion.choices[0].message["content"]}')
+    logger.trace(f'COMPLETION: {completion.choices[0].message["content"]}') # type: ignore
 
     unit_tests = utils.extract_code_block(completion)
 

@@ -6062,3 +6062,805 @@ def test_sum():
 
 Note that you will need to import the module under test in order to use the `sum` function.
 2023-07-10 18:50:54.182 | INFO     | translation.testing:run_tests:69 - Running tests using docker image python:3.8
+2023-07-10 09:55:58.324 | INFO     | translation.llm:_translate_function_to_python:110 - Translating function to Python...
+2023-07-10 09:55:58.325 | DEBUG    | translation.prompts.messages:translate_to_python_messages:123 - PROMPT: 
+    Convert the following Fortran function to Python. ```
+
+  REAL(KIND = r8) FUNCTION sum(a, b)
+  REAL(KIND = r8), INTENT(IN) :: a, b
+
+  sum = a + b
+END FUNCTION sum```
+
+    
+2023-07-10 09:56:00.328 | DEBUG    | translation.llm:_translate_function_to_python:118 - COMPLETION: Here's the Python equivalent of the given Fortran function:
+
+```python
+def sum(a, b):
+    return a + b
+```
+
+In Python, you don't need to specify the data type of the function or the input arguments explicitly.
+2023-07-10 09:56:00.329 | INFO     | translation.llm:_generate_fortran_unit_tests:51 - Generating unit tests in Fortran...
+2023-07-10 09:56:00.329 | DEBUG    | translation.prompts.messages:fortran_unit_test_messages:47 - PROMPT: 
+    Given fortran code, write unit tests using funit.
+
+    Example:
+    FORTRAN CODE:
+    ```
+    module fac
+        implicit none
+        
+        contains
+
+        recursive function factorial(n) result(fact)
+            integer, intent(in) :: n
+            integer :: fact
+
+            if (n == 0) then
+            fact = 1
+            else
+            fact = n * factorial(n - 1)
+            end if
+        end function factorial
+    end module fac
+    ```
+
+    FORTRAN TESTS:
+    ```
+    @test
+    subroutine test_fac()
+        use funit
+
+        @assertEqual(120, factorial(5), 'factorial(5)')
+        @assertEqual(1, factorial(1), 'factorial(1)')
+        @assertEqual(1, factorial(0), 'factorial(0)')
+
+    end subroutine test_fac
+    ```
+
+    Your turn:
+    FORTRAN CODE:
+```
+def sum(a, b):
+    return a + b
+
+```
+
+    FORTRAN TESTS:
+    
+2023-07-10 09:56:02.733 | DEBUG    | translation.llm:_generate_fortran_unit_tests:59 - COMPLETION: ```
+@test
+subroutine test_sum()
+    use funit
+
+    @assertEqual(5, sum(2, 3), 'sum(2, 3)')
+    @assertEqual(10, sum(5, 5), 'sum(5, 5)')
+    @assertEqual(0, sum(-5, 5), 'sum(-5, 5)')
+
+end subroutine test_sum
+```
+2023-07-10 09:56:02.733 | INFO     | translation.llm:_translate_tests_to_python:86 - Translating unit tests to Python...
+2023-07-10 09:56:02.734 | DEBUG    | translation.prompts.messages:translate_tests_to_python_messages:141 - PROMPT: 
+    Convert the following unit tests from Fortran to Python using pytest. No need to import the module under test. ```
+
+@test
+subroutine test_sum()
+    use funit
+
+    @assertEqual(5, sum(2, 3), 'sum(2, 3)')
+    @assertEqual(10, sum(5, 5), 'sum(5, 5)')
+    @assertEqual(0, sum(-5, 5), 'sum(-5, 5)')
+
+end subroutine test_sum
+```
+
+    
+2023-07-10 09:57:59.602 | INFO     | translation.llm:_translate_function_to_python:109 - Translating function to Python...
+2023-07-10 09:57:59.602 | DEBUG    | translation.prompts.messages:translate_to_python_messages:123 - PROMPT: 
+    Convert the following Fortran function to Python. ```
+
+  REAL(KIND = r8) FUNCTION sum(a, b)
+  REAL(KIND = r8), INTENT(IN) :: a, b
+
+  sum = a + b
+END FUNCTION sum```
+
+    
+2023-07-10 09:58:01.110 | DEBUG    | translation.llm:_translate_function_to_python:117 - COMPLETION: Here's the Python equivalent of the given Fortran function:
+
+```python
+def sum(a, b):
+    return a + b
+```
+
+In Python, you don't need to specify the data type of the function or the input arguments explicitly.
+2023-07-10 09:58:01.111 | INFO     | translation.llm:_generate_python_tests:68 - Generating unit tests based on python code...
+2023-07-10 09:58:01.111 | DEBUG    | translation.prompts.messages:generate_python_test_messages:105 - PROMPT: 
+Generate unit tests for the following Python function using pytest. No need to import the module under test. ```python
+def sum(a, b):
+    return a + b
+
+```
+    
+2023-07-10 09:58:05.286 | DEBUG    | translation.llm:_generate_python_tests:78 - COMPLETION: Sure! Here are some unit tests for the `sum` function using pytest:
+
+```python
+import pytest
+
+def test_sum_positive_numbers():
+    assert sum(2, 3) == 5
+
+def test_sum_negative_numbers():
+    assert sum(-2, -3) == -5
+
+def test_sum_zero():
+    assert sum(0, 0) == 0
+
+def test_sum_positive_and_negative_numbers():
+    assert sum(2, -3) == -1
+
+def test_sum_float_numbers():
+    assert sum(2.5, 3.5) == 6.0
+
+def test_sum_string_numbers():
+    assert sum("2", "3") == "23"
+
+def test_sum_invalid_input():
+    with pytest.raises(TypeError):
+        sum("2", 3)
+```
+
+These tests cover various scenarios such as adding positive numbers, negative numbers, zero, positive and negative numbers, float numbers, string numbers, and invalid input.
+2023-07-10 09:58:05.286 | INFO     | translation.testing:run_tests:69 - Running tests using docker image python:3.8
+2023-07-10 09:58:05.292 | DEBUG    | translation.testing:_run_tests_in_docker:28 - Pulling Docker image python:3.8...
+2023-07-10 09:58:24.894 | DEBUG    | translation.testing:_run_tests_in_docker:54 - Running tests in Docker container 5d1e8ca79ae34ede62bd61bc9e908cd4ecf6fa69ed09fae11e00268108a95f06...
+2023-07-10 09:58:43.312 | INFO     | translation.llm:_translate_function_to_python:109 - Translating function to Python...
+2023-07-10 09:58:43.312 | DEBUG    | translation.prompts.messages:translate_to_python_messages:123 - PROMPT: 
+    Convert the following Fortran function to Python. ```
+
+  SUBROUTINE quadratic(a, b, c, r1, r2)
+  IMPLICIT NONE
+  REAL(KIND = r8), INTENT(IN) :: a, b, c
+  REAL(KIND = r8), INTENT(OUT) :: r1, r2
+
+  ! !LOCAL VARIABLES:
+  REAL(KIND = r8) :: discriminant
+  REAL(KIND = r8) :: q
+
+  discriminant = SUM(a, b)
+
+  r1 = 0.0
+  r2 = 1.0
+END SUBROUTINE quadratic```
+
+    
+2023-07-10 09:58:45.559 | DEBUG    | translation.llm:_translate_function_to_python:117 - COMPLETION: Here's the equivalent Python function for the given Fortran code:
+
+```python
+def quadratic(a, b, c):
+    discriminant = a + b
+    r1 = 0.0
+    r2 = 1.0
+    return r1, r2
+```
+
+Note that in Python, there is no need to explicitly specify the data type of variables like in Fortran.
+2023-07-10 09:58:45.559 | INFO     | translation.llm:_generate_python_tests:68 - Generating unit tests based on python code...
+2023-07-10 09:58:45.559 | DEBUG    | translation.prompts.messages:generate_python_test_messages:105 - PROMPT: 
+Generate unit tests for the following Python function using pytest. No need to import the module under test. ```python
+def quadratic(a, b, c):
+    discriminant = a + b
+    r1 = 0.0
+    r2 = 1.0
+    return r1, r2
+
+```
+    
+2023-07-10 09:59:56.010 | DEBUG    | translation.llm:_generate_python_tests:78 - COMPLETION: Sure! Here are some unit tests for the `quadratic` function using pytest:
+
+```python
+import pytest
+
+def test_quadratic():
+    # Test case 1: a = 1, b = 2, c = 1
+    a = 1
+    b = 2
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -1.0
+    assert r2 == -1.0
+
+    # Test case 2: a = 2, b = -7, c = 3
+    a = 2
+    b = -7
+    c = 3
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 3.0
+    assert r2 == 0.5
+
+    # Test case 3: a = 0, b = 5, c = 2
+    a = 0
+    b = 5
+    c = 2
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -0.4
+    assert r2 == -0.4
+
+    # Test case 4: a = 1, b = 0, c = -4
+    a = 1
+    b = 0
+    c = -4
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 2.0
+    assert r2 == -2.0
+
+    # Test case 5: a = 0, b = 0, c = 0
+    a = 0
+    b = 0
+    c = 0
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 0.0
+    assert r2 == 1.0
+
+    # Test case 6: a = -1, b = 1, c = 1
+    a = -1
+    b = 1
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -1.0
+    assert r2 == 0.0
+
+    # Test case 7: a = 2, b = 2, c = 2
+    a = 2
+    b = 2
+    c = 2
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -1.0
+    assert r2 == 0.0
+
+    # Test case 8: a = 1, b = -5, c = 6
+    a = 1
+    b = -5
+    c = 6
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 3.0
+    assert r2 == 2.0
+
+    # Test case 9: a = 1, b = 1, c = 0
+    a = 1
+    b = 1
+    c = 0
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 0.0
+    assert r2 == -1.0
+
+    # Test case 10: a = 1, b = 0, c = 1
+    a = 1
+    b = 0
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -1.0
+    assert r2 == 1.0
+
+    # Test case 11: a = 1, b = 1, c = 1
+    a = 1
+    b = 1
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -1.0
+    assert r2 == 0.0
+
+    # Test case 12: a = 1, b = -3, c = 2
+    a = 1
+    b = -3
+    c = 2
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 2.0
+    assert r2 == 1.0
+
+    # Test case 13: a = 1, b = 0, c = 0
+    a = 1
+    b = 0
+    c = 0
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 0.0
+    assert r2 == 0.0
+
+    # Test case 14: a = 0, b = 1, c = 0
+    a = 0
+    b = 1
+    c = 0
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 0.0
+    assert r2 == 0.0
+
+    # Test case 15: a = 0, b = 0, c = 1
+    a = 0
+    b = 0
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 1.0
+    assert r2 == 1.0
+
+    # Test case 16: a = 0, b = 1, c = 1
+    a = 0
+    b = 1
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -1.0
+    assert r2 == -1.0
+
+    # Test case 17: a = 1, b = 0, c = 1
+    a = 1
+    b = 0
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -1.0
+    assert r2 == -1.0
+
+    # Test case 18: a = 1, b = 1, c = 0
+    a = 1
+    b = 1
+    c = 0
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 0.0
+    assert r2 == 0.0
+
+    # Test case 19: a = 1, b = 1, c = 1
+    a = 1
+    b = 1
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -1.0
+    assert r2 == -1.0
+
+    # Test case 20: a = 1, b = -3, c = 2
+    a = 1
+    b = -3
+    c = 2
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 2.0
+    assert r2 == 1.0
+
+    # Test case 21: a = 1, b = 0, c = 0
+    a = 1
+    b = 0
+    c = 0
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 0.0
+    assert r2 == 0.0
+
+    # Test case 22: a = 0, b = 1, c = 0
+    a = 0
+    b = 1
+    c = 0
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 0.0
+    assert r2 == 0.0
+
+    # Test case 23: a = 0, b = 0, c = 1
+    a = 0
+    b = 0
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 1.0
+    assert r2 == 1.0
+
+    # Test case 24: a = 0, b = 1, c = 1
+    a = 0
+    b = 1
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -1.0
+    assert r2 == -1.0
+
+    # Test case 25: a = 1, b = 0, c = 1
+    a = 1
+    b = 0
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -1.0
+    assert r2 == -1.0
+
+    # Test case 26: a = 1, b = 1, c = 0
+    a = 1
+    b = 1
+    c = 0
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 0.0
+    assert r2 == 0.0
+
+    # Test case 27: a = 1, b = 1, c = 1
+    a = 1
+    b = 1
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -1.0
+    assert r2 == -1.0
+
+    # Test case 28: a = 1, b = -3, c = 2
+    a = 1
+    b = -3
+    c = 2
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 2.0
+    assert r2 == 1.0
+
+    # Test case 29: a = 1, b = 0, c = 0
+    a = 1
+    b = 0
+    c = 0
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 0.0
+    assert r2 == 0.0
+
+    # Test case 30: a = 0, b = 1, c = 0
+    a = 0
+    b = 1
+    c = 0
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 0.0
+    assert r2 == 0.0
+
+    # Test case 31: a = 0, b = 0, c = 1
+    a = 0
+    b = 0
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 1.0
+    assert r2 == 1.0
+
+    # Test case 32: a = 0, b = 1, c = 1
+    a = 0
+    b = 1
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -1.0
+    assert r2 == -1.0
+
+    # Test case 33: a = 1, b = 0, c = 1
+    a = 1
+    b = 0
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -1.0
+    assert r2 == -1.0
+
+    # Test case 34: a = 1, b = 1, c = 0
+    a = 1
+    b = 1
+    c = 0
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 0.0
+    assert r2 == 0.0
+
+    # Test case 35: a = 1, b = 1, c = 1
+    a = 1
+    b = 1
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -1.0
+    assert r2 == -1.0
+
+    # Test case 36: a = 1, b = -3, c = 2
+    a = 1
+    b = -3
+    c = 2
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 2.0
+    assert r2 == 1.0
+
+    # Test case 37: a = 1, b = 0, c = 0
+    a = 1
+    b = 0
+    c = 0
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 0.0
+    assert r2 == 0.0
+
+    # Test case 38: a = 0, b = 1, c = 0
+    a = 0
+    b = 1
+    c = 0
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 0.0
+    assert r2 == 0.0
+
+    # Test case 39: a = 0, b = 0, c = 1
+    a = 0
+    b = 0
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 1.0
+    assert r2 == 1.0
+
+    # Test case 40: a = 0, b = 1, c = 1
+    a = 0
+    b = 1
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -1.0
+    assert r2 == -1.0
+
+    # Test case 41: a = 1, b = 0, c = 1
+    a = 1
+    b = 0
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -1.0
+    assert r2 == -1.0
+
+    # Test case 42: a = 1, b = 1, c = 0
+    a = 1
+    b = 1
+    c = 0
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 0.0
+    assert r2 == 0.0
+
+    # Test case 43: a = 1, b = 1, c = 1
+    a = 1
+    b = 1
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -1.0
+    assert r2 == -1.0
+
+    # Test case 44: a = 1, b = -3, c = 2
+    a = 1
+    b = -3
+    c = 2
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 2.0
+    assert r2 == 1.0
+
+    # Test case 45: a = 1, b = 0, c = 0
+    a = 1
+    b = 0
+    c = 0
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 0.0
+    assert r2 == 0.0
+
+    # Test case 46: a = 0, b = 1, c = 0
+    a = 0
+    b = 1
+    c = 0
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 0.0
+    assert r2 == 0.0
+
+    # Test case 47: a = 0, b = 0, c = 1
+    a = 0
+    b = 0
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 1.0
+    assert r2 == 1.0
+
+    # Test case 48: a = 0, b = 1, c = 1
+    a = 0
+    b = 1
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -1.0
+    assert r2 == -1.0
+
+    # Test case 49: a = 1, b = 0, c = 1
+    a = 1
+    b = 0
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -1.0
+    assert r2 == -1.0
+
+    # Test case 50: a = 1, b = 1, c = 0
+    a = 1
+    b = 1
+    c = 0
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 0.0
+    assert r2 == 0.0
+
+    # Test case 51: a = 1, b = 1, c = 1
+    a = 1
+    b = 1
+    c = 1
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == -1.0
+    assert r2 == -1.0
+
+    # Test case 52: a = 1, b = -3, c = 2
+    a = 1
+    b = -3
+    c = 2
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 2.0
+    assert r2 == 1.0
+
+    # Test case 53: a = 1, b = 0, c = 0
+    a = 1
+    b = 0
+    c = 0
+    r1, r2 = quadratic(a, b, c)
+    assert r1 == 0.0
+    assert r2 == 0.0
+
+    # Test case 54: a = 0, b = 1, c = 0
+    a = 0
+    b = 1
+2023-07-10 09:59:56.010 | INFO     | translation.testing:run_tests:69 - Running tests using docker image python:3.8
+2023-07-10 09:59:56.017 | DEBUG    | translation.testing:_run_tests_in_docker:28 - Pulling Docker image python:3.8...
+2023-07-10 09:59:56.134 | DEBUG    | translation.testing:_run_tests_in_docker:54 - Running tests in Docker container 8f1b275afc68a6483d45d6a5592d1023d5fb9a2fa2000a2b6715e9846dbab92d...
+2023-07-10 10:00:14.471 | INFO     | translation.llm:_translate_function_to_python:109 - Translating function to Python...
+2023-07-10 10:00:14.471 | DEBUG    | translation.prompts.messages:translate_to_python_messages:123 - PROMPT: 
+    Convert the following Fortran function to Python. ```
+
+  !------------------------------------------------------------------------------
+  SUBROUTINE ci_func(ci, fval, p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol)
+  !
+  !! DESCRIPTION:
+  ! evaluate the function
+  ! f(ci)=ci - (ca - (1.37rb+1.65rs))*patm*an
+  !!ARGUMENTS:
+  REAL(KIND = r8), INTENT(IN) :: ci
+  ! intracellular leaf CO2
+
+  REAL(KIND = r8) :: r1, r2
+
+  CALL quadratic(1.0, 1.0, 1.0, r1, r2)
+
+  fval = 10.0
+
+END SUBROUTINE ci_func```
+
+    
+2023-07-10 10:00:18.524 | DEBUG    | translation.llm:_translate_function_to_python:117 - COMPLETION: ```python
+import numpy as np
+
+def ci_func(ci):
+    # intracellular leaf CO2
+    # evaluate the function f(ci) = ci - (ca - (1.37rb+1.65rs))*patm*an
+    r1, r2 = quadratic(1.0, 1.0, 1.0)
+    fval = 10.0
+    return fval
+
+def quadratic(a, b, c):
+    # solve quadratic equation ax^2 + bx + c = 0
+    discriminant = b**2 - 4*a*c
+    if discriminant > 0:
+        x1 = (-b + np.sqrt(discriminant)) / (2*a)
+        x2 = (-b - np.sqrt(discriminant)) / (2*a)
+        return x1, x2
+    elif discriminant == 0:
+        x = -b / (2*a)
+        return x, x
+    else:
+        return None
+```
+2023-07-10 10:00:18.525 | INFO     | translation.llm:_generate_python_tests:68 - Generating unit tests based on python code...
+2023-07-10 10:00:18.525 | DEBUG    | translation.prompts.messages:generate_python_test_messages:105 - PROMPT: 
+Generate unit tests for the following Python function using pytest. No need to import the module under test. ```python
+import numpy as np
+
+def ci_func(ci):
+    # intracellular leaf CO2
+    # evaluate the function f(ci) = ci - (ca - (1.37rb+1.65rs))*patm*an
+    r1, r2 = quadratic(1.0, 1.0, 1.0)
+    fval = 10.0
+    return fval
+
+def quadratic(a, b, c):
+    # solve quadratic equation ax^2 + bx + c = 0
+    discriminant = b**2 - 4*a*c
+    if discriminant > 0:
+        x1 = (-b + np.sqrt(discriminant)) / (2*a)
+        x2 = (-b - np.sqrt(discriminant)) / (2*a)
+        return x1, x2
+    elif discriminant == 0:
+        x = -b / (2*a)
+        return x, x
+    else:
+        return None
+
+```
+    
+2023-07-10 10:00:33.123 | DEBUG    | translation.llm:_generate_python_tests:78 - COMPLETION: To generate unit tests for the given Python function using pytest, we can create a separate test file and define test functions for each scenario we want to test. Here's an example of how the test file could look like:
+
+```python
+import pytest
+from module_under_test import ci_func
+
+def test_ci_func():
+    # Test case 1: ci = 0, ca = 0, rb = 0, rs = 0, patm = 0, an = 0
+    assert ci_func(0) == 10.0
+
+    # Test case 2: ci = 1, ca = 2, rb = 3, rs = 4, patm = 5, an = 6
+    assert ci_func(1) == 10.0
+
+    # Test case 3: ci = -1, ca = -2, rb = -3, rs = -4, patm = -5, an = -6
+    assert ci_func(-1) == 10.0
+
+    # Test case 4: ci = 10, ca = 10, rb = 10, rs = 10, patm = 10, an = 10
+    assert ci_func(10) == 10.0
+
+    # Test case 5: ci = 100, ca = 100, rb = 100, rs = 100, patm = 100, an = 100
+    assert ci_func(100) == 10.0
+
+    # Test case 6: ci = -100, ca = -100, rb = -100, rs = -100, patm = -100, an = -100
+    assert ci_func(-100) == 10.0
+
+    # Test case 7: ci = 0.5, ca = 0.5, rb = 0.5, rs = 0.5, patm = 0.5, an = 0.5
+    assert ci_func(0.5) == 10.0
+
+    # Test case 8: ci = -0.5, ca = -0.5, rb = -0.5, rs = -0.5, patm = -0.5, an = -0.5
+    assert ci_func(-0.5) == 10.0
+
+    # Test case 9: ci = 0.123456789, ca = 0.987654321, rb = 0.111111111, rs = 0.222222222, patm = 0.333333333, an = 0.444444444
+    assert ci_func(0.123456789) == 10.0
+
+    # Test case 10: ci = -0.123456789, ca = -0.987654321, rb = -0.111111111, rs = -0.222222222, patm = -0.333333333, an = -0.444444444
+    assert ci_func(-0.123456789) == 10.0
+
+if __name__ == "__main__":
+    pytest.main()
+```
+
+Make sure to replace `module_under_test` with the actual name of the module containing the `ci_func` function. You can then run the test file using pytest to execute the unit tests.
+2023-07-10 10:00:33.123 | INFO     | translation.testing:run_tests:69 - Running tests using docker image python:3.8
+2023-07-10 10:00:33.130 | DEBUG    | translation.testing:_run_tests_in_docker:28 - Pulling Docker image python:3.8...
+2023-07-10 10:00:33.259 | DEBUG    | translation.testing:_run_tests_in_docker:54 - Running tests in Docker container 6488c1d9774732c9bddfd79dace5c19a85ff6799ea05a0dfde52c9ea43f0bc80...
+2023-07-10 12:25:22.517 | DEBUG    | translation.llm:translate:69 - Translating function to Python...
+2023-07-10 12:25:22.518 | DEBUG    | translation.prompts.messages:translate_to_python_messages:123 - PROMPT: 
+    Convert the following Fortran function to Python. ```
+
+  REAL(KIND = r8) FUNCTION sum(a, b)
+  REAL(KIND = r8), INTENT(IN) :: a, b
+
+  sum = a + b
+END FUNCTION sum```
+
+    
+2023-07-10 12:25:24.034 | DEBUG    | translation.llm:generate_unit_tests:51 - Generating unit tests based on python code...
+2023-07-10 12:25:24.034 | DEBUG    | translation.prompts.messages:generate_python_test_messages:105 - PROMPT: 
+Generate unit tests for the following Python function using pytest. No need to import the module under test. ```python
+def sum(a, b):
+    return a + b
+
+```
+    
+2023-07-10 12:25:28.230 | INFO     | translation.testing:run_tests:80 - Running tests using docker image python:3.8
+2023-07-10 12:25:28.236 | DEBUG    | translation.testing:_run_tests_in_docker:36 - Pulling Docker image python:3.8...
+2023-07-10 12:25:28.363 | DEBUG    | translation.testing:_run_tests_in_docker:65 - Running tests in Docker container b9ca8b4094b049cfa3f20bb53d63db74c7cd1559872e6d5ecaba02e8ba395a5d...
+2023-07-10 12:25:33.813 | DEBUG    | translation.llm:translate:69 - Translating function to Python...
+2023-07-10 12:25:33.813 | DEBUG    | translation.prompts.messages:translate_to_python_messages:123 - PROMPT: 
+    Convert the following Fortran function to Python. ```
+
+  SUBROUTINE quadratic(a, b, c, r1, r2)
+  IMPLICIT NONE
+  REAL(KIND = r8), INTENT(IN) :: a, b, c
+  REAL(KIND = r8), INTENT(OUT) :: r1, r2
+
+  ! !LOCAL VARIABLES:
+  REAL(KIND = r8) :: discriminant
+  REAL(KIND = r8) :: q
+
+  discriminant = SUM(a, b)
+
+  r1 = 0.0
+  r2 = 1.0
+END SUBROUTINE quadratic```
+
+    
+2023-07-10 12:25:35.809 | DEBUG    | translation.llm:generate_unit_tests:51 - Generating unit tests based on python code...
+2023-07-10 12:25:35.810 | DEBUG    | translation.prompts.messages:generate_python_test_messages:105 - PROMPT: 
+Generate unit tests for the following Python function using pytest. No need to import the module under test. ```python
+def quadratic(a, b, c):
+    discriminant = a + b
+    r1 = 0.0
+    r2 = 1.0
+    return r1, r2
+
+```
+    

@@ -46,19 +46,20 @@ def fortran_unit_test_messages(fortran_code: str):
 
     logger.debug(f"PROMPT: {prompt}")
 
-
     return [
-            {"role": "system", "content": "You're a proficient Fortran programmer."},
-            {
-                "role": "user",
-                "content": prompt,
-            },
-        ]
+        {"role": "system", "content": "You're a proficient Fortran programmer."},
+        {
+            "role": "user",
+            "content": prompt,
+        },
+    ]
 
 
-def iterate_messages(python_function: str, python_unit_tests: str, python_test_results: str):
+def iterate_messages(
+    python_function: str, python_unit_tests: str, python_test_results: str
+):
     return [
-            {
+        {
             "role": "system",
             "content": """You're a programmer proficient in Fortran and Python. You can write and execute Python code by enclosing it in triple backticks, e.g. ```code goes here```.
             When prompted to fix source code and unit tests, always return a response of the form:
@@ -92,22 +93,22 @@ Output from `pytest`:
 Modify the source code to pass the failing unit tests. Return a response of the following form:
 SOURCE CODE: ```<python source code>```
 UNIT TESTS: ```<python unit tests>```
-"""
-        }
+""",
+        },
     ]
 
 
 def generate_python_test_messages(python_function: str):
     prompt = f"""
-Generate unit tests for the following Python function using pytest. No need to import the module under test. ```python\n{python_function}\n```
+Generate 5 unit tests for the following Python function using pytest. No need to import the module under test. ```python\n{python_function}\n```
     """
-     
+
     logger.debug(f"PROMPT: {prompt}")
 
     return [
         {
             "role": "system",
-            "content": """You're a programmer proficient in Python and unit testing. You can write and execute Python code by enclosing it in triple backticks, e.g. ```code goes here```"""
+            "content": """You're a programmer proficient in Python and unit testing. You can write and execute Python code by enclosing it in triple backticks, e.g. ```code goes here```""",
         },
         {
             "role": "user",

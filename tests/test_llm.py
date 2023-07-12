@@ -1,6 +1,6 @@
 import pytest
 
-import translation.llm as llm
+import translation.modules.translate as translate
 import translation.utils as utils
 
 def test_iterate():
@@ -209,7 +209,7 @@ ERROR tmptsl1v0ze.py
 
 
     # Call the iterate function with the initial Fortran function and unit tests
-    source_code, unit_tests = llm.iterate(python_function, python_unit_tests, python_test_output)
+    source_code, unit_tests = translate.iterate(python_function, python_unit_tests, python_test_output)
 
     utils.save_to_csv([{'source_code': source_code, 'unit_tests': unit_tests}], outfile='./iterate_response.csv')
     

@@ -1,5 +1,5 @@
 import textwrap
-from translation.testing import run_tests, TestResult
+from translation.modules.testing import run_tests, TestResult
 
 
 def test_run_tests_passed():

@@ -4,13 +4,13 @@ from git.repo import Repo
 import os
 import random
 
-import translation.ast.dag
-from translation.llm import translate, generate_unit_tests, iterate
-from translation.testing import run_tests, TestResult
+from translation.modules.ast.dag import DAG
+from translation.modules.translate import translate, generate_unit_tests, iterate
+from translation.modules.testing import run_tests, TestResult
 
 app = typer.Typer()
 
-from translation.utils import logger
+from translation.utils import logger, options_menu, write_to_file
 from yaspin import yaspin
 
 import sys
@@ -19,37 +19,13 @@ logger.remove()
 logger.add(sys.stderr, level="INFO")
 
 
-def options_menu(options: list[str]):
-    response = ""
-
-    print("Please select one of the following options:")
-    for i, option in enumerate(options):
-        print(f"{i+1}. {option}")
-
-    while True:
-        response = input(f"Select an option [1-{len(options)}]: ")
-        try:
-            choice = int(response)
-            if choice >= 1 and choice <= len(options):
-                return options[choice - 1]
-        except:
-            pass
-
-
-def write_to_file(source_code: str, outfile: str):
-    with open(outfile, "a") as f:
-        f.write("\n")
-        f.write(source_code)
-        f.write("\n")
-
-
 @app.command()
 def main(
     input_file: str = "./examples/fibonacci/fortran/fibonacci.f90",
     output_file: str = "./examples/fibonacci/python/fibonacci.py",
     output_test_file: str = "./examples/fibonacci/python/test_fibonacci.py",
 ):
-    dag = translation.ast.dag.DAG(input_file)
+    dag = DAG(input_file)
 
     function_name = options_menu(dag.public_functions)
 
