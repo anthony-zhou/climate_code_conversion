@@ -1,38 +1,15 @@
-import random
-import string
-
-# import openai
-import os
-import dotenv
-
-import translation.testing as testing
+import translation.modules.testing as testing
 import translation.utils as utils
 from translation.utils import logger
 import logging
 import translation.prompts.messages
-
-
-logger.add("llm_outputs.log")
-
 from tenacity import (
     retry,
     stop_after_attempt,
     wait_random_exponential,
     before_sleep_log,
-)  # for exponential backoff
-
-import promptlayer
-
-dotenv.load_dotenv()
-
-promptlayer.api_key = os.environ.get("PROMPTLAYER_API_KEY")
-
-# Swap out your 'import openai'
-openai = promptlayer.openai
-openai.api_key = os.environ.get("OPENAI_API_KEY")
-
-model_name = "gpt-3.5-turbo"
-
+)
+from translation.config import openai, model_name
 
 logging_logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -47,25 +24,8 @@ def completion_with_backoff(**kwargs):
     return openai.ChatCompletion.create(**kwargs)
 
 
-def _generate_fortran_unit_tests(source_code: str):
-    logger.info("Generating unit tests in Fortran...")
-
-    completion = completion_with_backoff(
-        model=model_name,
-        messages=translation.prompts.messages.fortran_unit_test_messages(source_code),
-        temperature=0,
-    )
-
-    logger.debug(f'COMPLETION: {completion.choices[0].message["content"]}')
-
-    # Extract the code block from the completion
-    unit_tests = utils.extract_code_block(completion)
-
-    return unit_tests
-
-
-def _generate_python_tests(python_function: str):
-    logger.info("Generating unit tests based on python code...")
+def generate_unit_tests(python_function: str):
+    logger.debug("Generating unit tests based on python code...")
 
     completion = completion_with_backoff(
         model=model_name,
@@ -75,39 +35,15 @@ def _generate_python_tests(python_function: str):
         temperature=0.0,
     )
 
-    logger.debug(f'COMPLETION: {completion.choices[0].message["content"]}')
+    logger.trace(f'COMPLETION: {completion.choices[0].message["content"]}') # type: ignore
 
     unit_tests = utils.extract_code_block(completion)
 
     return unit_tests
 
 
-def _translate_tests_to_python(unit_tests: str):
-    logger.info("Translating unit tests to Python...")
-
-    completion = completion_with_backoff(
-        model=model_name,
-        messages=translation.prompts.messages.translate_tests_to_python_messages(
-            unit_tests
-        ),
-        temperature=0,
-    )
-
-    logger.debug(f'COMPLETION: {completion.choices[0].message["content"]}')
-
-    unit_tests = utils.extract_code_block(completion)
-    return unit_tests
-
-
-def generate_unit_tests(source_code):
-    unit_tests = _generate_fortran_unit_tests(source_code)
-    python_tests = _translate_tests_to_python(unit_tests)
-
-    return python_tests
-
-
-def _translate_function_to_python(source_code: str):
-    logger.info("Translating function to Python...")
+def translate(source_code: str):
+    logger.debug("Translating function to Python...")
 
     completion = completion_with_backoff(
         model=model_name,
@@ -115,7 +51,7 @@ def _translate_function_to_python(source_code: str):
         temperature=0,
     )
 
-    logger.debug(f'COMPLETION: {completion.choices[0].message["content"]}')
+    logger.trace(f'COMPLETION: {completion.choices[0].message["content"]}')
 
     # Extract the code block from the completion
     python_function = utils.extract_code_block(completion)
@@ -128,7 +64,7 @@ def iterate(python_function, python_unit_tests, python_test_results, temperature
         python_function, python_unit_tests, python_test_results
     )
 
-    logger.debug(messages)
+    logger.trace(messages)
     completion = completion_with_backoff(
         model=model_name,
         messages=messages,
@@ -136,7 +72,7 @@ def iterate(python_function, python_unit_tests, python_test_results, temperature
     )
 
     response = completion.choices[0].message["content"]
-    logger.debug(f"RESPONSE:\n{response}")
+    logger.trace(f"RESPONSE:\n{response}")
 
     source_code = utils.extract_source_code(response)
     unit_tests = utils.extract_unit_test_code(response)
@@ -149,89 +85,89 @@ def iterate(python_function, python_unit_tests, python_test_results, temperature
     return source_code, unit_tests
 
 
-def generate_python_code(fortran_function: str, function_name=""):
-    # Given a Fortran function, translate it into Python, with unit tests for each
+# def generate_python_code(fortran_function: str, function_name=""):
+#     # Given a Fortran function, translate it into Python, with unit tests for each
 
-    filename = "".join(random.choices(string.ascii_lowercase, k=10))
-    filename = f"./output/translations/{function_name}_{filename}.csv"
-    logger.info(f"Saving outputs to {filename}")
+#     filename = "".join(random.choices(string.ascii_lowercase, k=10))
+#     filename = f"./output/translations/{function_name}_{filename}.csv"
+#     logger.debug(f"Saving outputs to {filename}")
 
-    # fortran_unit_tests = _generate_fortran_unit_tests(fortran_function)
-    # python_unit_tests = _translate_tests_to_python(fortran_unit_tests)
-    python_function = _translate_function_to_python(fortran_function)
-    python_unit_tests = _generate_python_tests(python_function)
+#     # fortran_unit_tests = _generate_fortran_unit_tests(fortran_function)
+#     # python_unit_tests = _translate_tests_to_python(fortran_unit_tests)
+#     python_function = translate(fortran_function)
+#     python_unit_tests = generate_unit_tests(python_function)
 
-    # TODO: determine what packages we need in the docker image (basic static analysis)
-    docker_image = "python:3.8"
-    python_test_results = testing.run_tests(
-        python_function, python_unit_tests, docker_image=docker_image
-    )
+#     # TODO: determine what packages we need in the docker image (basic static analysis)
+#     docker_image = "python:3.8"
+#     python_test_results = testing.run_tests(
+#         python_function, python_unit_tests, docker_image=docker_image
+#     )
 
-    i = 0
-    dict = [
-        {
-            "fortran_function": fortran_function,
-            # 'fortran_unit_tests': fortran_unit_tests,
-            "python_function": python_function,
-            "python_unit_tests": python_unit_tests,
-            "python_test_results": python_test_results,
-            "code_diffs": "",
-            "test_diffs": "",
-        }
-    ]
+#     i = 0
+#     dict = [
+#         {
+#             "fortran_function": fortran_function,
+#             # 'fortran_unit_tests': fortran_unit_tests,
+#             "python_function": python_function,
+#             "python_unit_tests": python_unit_tests,
+#             "python_test_results": python_test_results,
+#             "code_diffs": "",
+#             "test_diffs": "",
+#         }
+#     ]
 
-    logger.debug(f"Test results for iteration {i}")
-    logger.debug(python_test_results)
+#     logger.trace(f"Test results for iteration {i}")
+#     logger.trace(python_test_results)
 
-    utils.save_to_csv(dict, outfile=filename)
+#     utils.save_to_csv(dict, outfile=filename)
 
-    response = input("Would you like to continue (Y/n)? ")
-    while response.lower() != "n":
-        i += 1
-        new_python_function, new_python_unit_tests = iterate(
-            # fortran_function=fortran_function,
-            #   fortran_unit_tests=fortran_unit_tests,
-            python_function=python_function,
-            python_unit_tests=python_unit_tests,
-            python_test_results=utils.remove_ansi_escape_codes(python_test_results),
-            temperature=0,
-        )
+#     response = input("Would you like to continue (Y/n)? ")
+#     while response.lower() != "n":
+#         i += 1
+#         new_python_function, new_python_unit_tests = iterate(
+#             # fortran_function=fortran_function,
+#             #   fortran_unit_tests=fortran_unit_tests,
+#             python_function=python_function,
+#             python_unit_tests=python_unit_tests,
+#             python_test_results=utils.remove_ansi_escape_codes(python_test_results),
+#             temperature=0,
+#         )
 
-        logger.debug("New python function:")
-        logger.debug(new_python_function)
+#         logger.trace("New python function:")
+#         logger.trace(new_python_function)
 
-        logger.debug("New python unit tests:")
-        logger.debug(new_python_unit_tests)
+#         logger.trace("New python unit tests:")
+#         logger.trace(new_python_unit_tests)
 
-        code_diffs = utils.find_diffs(new_python_function, python_function)
-        python_function = new_python_function
+#         code_diffs = utils.find_diffs(new_python_function, python_function)
+#         python_function = new_python_function
 
-        test_diffs = utils.find_diffs(new_python_unit_tests, python_unit_tests)
-        python_unit_tests = new_python_unit_tests
+#         test_diffs = utils.find_diffs(new_python_unit_tests, python_unit_tests)
+#         python_unit_tests = new_python_unit_tests
 
-        python_test_results = testing.run_tests(
-            python_function, python_unit_tests, docker_image=docker_image
-        )
-        logger.debug(f"Test results for iteration {i}")
-        logger.debug(python_test_results)
+#         python_test_results = testing.run_tests(
+#             python_function, python_unit_tests, docker_image=docker_image
+#         )
+#         logger.trace(f"Test results for iteration {i}")
+#         logger.trace(python_test_results)
 
-        dict.append(
-            {
-                "fortran_function": fortran_function,
-                # 'fortran_unit_tests': fortran_unit_tests,
-                "python_function": new_python_function,
-                "python_unit_tests": new_python_unit_tests,
-                "python_test_results": python_test_results,
-                "code_diffs": code_diffs,
-                "test_diffs": test_diffs,
-            }
-        )
+#         dict.append(
+#             {
+#                 "fortran_function": fortran_function,
+#                 # 'fortran_unit_tests': fortran_unit_tests,
+#                 "python_function": new_python_function,
+#                 "python_unit_tests": new_python_unit_tests,
+#                 "python_test_results": python_test_results,
+#                 "code_diffs": code_diffs,
+#                 "test_diffs": test_diffs,
+#             }
+#         )
 
-        utils.save_to_csv(dict, filename)
+#         utils.save_to_csv(dict, filename)
 
-        response = input("Would you like to continue (Y/n)? ")
+#         response = input("Would you like to continue (Y/n)? ")
 
-    logger.info(f"Done. Output saved to {filename}.")
+#     logger.debug(f"Done. Output saved to {filename}.")
 
 
 if __name__ == "__main__":

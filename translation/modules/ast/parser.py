@@ -23,50 +23,63 @@ def _find_public_functions(node, func_name=None):
         items = node.items
         if items[0].lower() == "public":
             yield str(items[1])
-    elif (
-        type(node) is not str
-        and type(node) is not int
-        and type(node) is not float
-        and node is not None
-        and type(node) is not tuple
-    ):
+    elif "children" in dir(node):
         for child in node.children:
             yield from _find_public_functions(child, func_name)
 
 
-def _find_calls(node, func_name=None):
-    if isinstance(
+def is_function_or_subroutine(node):
+    return isinstance(
         node, (Fortran2003.Function_Subprogram, Fortran2003.Subroutine_Subprogram)
-    ):
-        # Get first non-comment item in the node
-        index = 0
-        while isinstance(node.content[index], Fortran2003.Comment):
-            index += 1
-        func_name = str(node.content[index].get_name())
-        print(f"Found function or subroutine {func_name}")
-        source_code = str(node)
-        # print(f"Source code: {source_code}")
-        yield (func_name, source_code, None)
-    if isinstance(
-        node, (Fortran2003.Call_Stmt, Fortran2003.Intrinsic_Function_Reference)
-    ):
-        called = str(node.items[0]).lower()
-        # print(f"{called} called from {func_name}")
-        if func_name == None:
-            # `called` is being called from the top level. This must be an external
-            yield ("EXTERNAL", "", called)
-        else:
-            yield (func_name, "", called)
-    elif (
-        type(node) is not str
-        and type(node) is not int
-        and type(node) is not float
-        and node is not None
-        and type(node) is not tuple
-    ):
-        # print(f"Found statement of type{type(node)}")
+    )
+
+
+def get_function_name(node):
+    index = 0
+    while isinstance(node.content[index], Fortran2003.Comment):
+        index += 1
+    func_name = str(node.content[index].get_name())
+    return func_name
+
+
+def get_source_code(node):
+    return str(node)
+
+
+def is_function_call(node, functions):
+    return (
+        isinstance(
+            node, (Fortran2003.Call_Stmt, Fortran2003.Intrinsic_Function_Reference)
+        )
+        or isinstance(node, (Fortran2003.Part_Ref))
+        and str(node.items[0]).lower() in functions
+    )
+
+
+def traverse_function_definitions(node):
+    if is_function_or_subroutine(node):
+        func_name = get_function_name(node)
+        source_code = get_source_code(node)
+        print("found function", func_name)
+        yield (func_name, source_code)
+    if "children" in dir(node):
         for child in node.children:
-            yield from _find_calls(child, func_name)
+            yield from traverse_function_definitions(child)
+
+
+def traverse_function_calls(node, functions, func_name=None):
+    # NOTE: this will not find function calls defined outside of the module, if they are called inside a function.
+    if is_function_or_subroutine(node):
+        func_name = get_function_name(node)
+    if is_function_call(node, functions):
+        called = str(node.items[0]).lower()
+        if func_name is not None:
+            yield (func_name, called)
+        else:
+            yield ("EXTERNAL", called)
+    if "children" in dir(node):
+        for child in node.children:
+            yield from traverse_function_calls(child, functions, func_name)
 
 
 def get_dag(filename: str):
@@ -78,11 +91,11 @@ def get_dag(filename: str):
     """
     ast = _get_parse_tree(filename)
     dependencies = defaultdict(lambda: {"source": "", "calls": []})
-    for func_name, source_code, call in _find_calls(ast):
+    for func_name, source_code in traverse_function_definitions(ast):
         if source_code != "":
             dependencies[func_name]["source"] = source_code
-        if call is not None:
-            dependencies[func_name]["calls"].append(call)  # type: ignore
+    for func_name, call in traverse_function_calls(ast, dependencies):
+        dependencies[func_name]["calls"].append(call)  # type: ignore
     dependencies = dict(dependencies)
 
     dag = nx.DiGraph()

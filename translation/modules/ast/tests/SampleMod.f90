@@ -11,11 +11,11 @@ module SampleMod
 
    contains
 
-   real(r8) function sum(a, b)
+   real(r8) function add(a, b)
       real(r8), intent(in) :: a, b
 
-      sum = a + b
-   end function sum
+      add = a + b
+   end function add
 
    subroutine quadratic(a, b, c, r1, r2)
       implicit none
@@ -26,7 +26,7 @@ module SampleMod
       real(r8) :: discriminant
       real(r8) :: q
 
-      discriminant = sum(a, b)
+      discriminant = add(a, b)
 
       r1 = 0.0
       r2 = 1.0
