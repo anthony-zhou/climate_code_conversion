@@ -1,52 +1,32 @@
-import translation.ast.dag
+import rich
 import typer
 import textwrap
+from git.repo import Repo
+import os
+import random
+
+from translation.modules.ast.dag import DAG
+from translation.modules.translate import translate, generate_unit_tests, iterate
+from translation.modules.testing import run_tests, TestResult
 
 app = typer.Typer()
 
+from translation.utils import logger, options_menu, write_to_file
+from yaspin import yaspin
 
-def get_input_args():
-    # TODO: read input from stdin or CLI args
-    return "./ast/tests/SampleMod.f90"
+import sys
 
-
-def options_menu(options: list[str]):
-    response = ""
-
-    print("Please select one of the following options:")
-    for i, option in enumerate(options):
-        print(f"{i+1}. {option}")
-
-    while True:
-        response = input(f"Select an option [1-{len(options)}]: ")
-        try:
-            choice = int(response)
-            if choice >= 1 and choice <= len(options):
-                return options[choice - 1]
-        except:
-            pass
-
-
-def translate_internal(func: str, source: str, outfile):
-    print(f"Translating {func}")
-    # TODO: start the translation loop for this function.
-    func_body = textwrap.dedent(
-        f"""\
-    def {func}():
-        pass
-    """
-    )
-
-    # Write function to the appropriate location (top of the open file)
-    with open(outfile, "a") as f:
-        f.write("\n")
-        f.write(func_body)
-        f.write("\n")
+logger.remove()
+logger.add(sys.stderr, level="INFO")
 
 
 @app.command()
-def main(filename: str = "./ast/tests/SampleMod.f90"):
-    dag = translation.ast.dag.DAG(filename)
+def migrate(
+    input_file: str = "./examples/fibonacci/fortran/fibonacci.f90",
+    output_file: str = "./examples/fibonacci/python/fibonacci.py",
+    output_test_file: str = "./examples/fibonacci/python/test_fibonacci.py",
+):
+    dag = DAG(input_file)
 
     function_name = options_menu(dag.public_functions)
 
@@ -61,6 +41,8 @@ def main(filename: str = "./ast/tests/SampleMod.f90"):
     # - generate function from context
     # - leave a TODO comment and define the function later
     # - supply your own function
+    print(externals)
+    print(internals)
 
     if len(externals) > 0:
         print("Translating external dependencies")
@@ -70,17 +52,49 @@ def main(filename: str = "./ast/tests/SampleMod.f90"):
 
     if len(internals) > 0:
         print("Translating internal dependencies")
-        # For each internal dependency, translate with a unit test.
-        for func, item in internals:
-            translate_internal(func, item["source"], "./out.py")
+        for func_name, dependency in internals:
+            with yaspin(text=f"Translating {func_name}...") as spinner:
+                python_function = translate(dependency["source"])
+                write_to_file(python_function, output_file)
+                while True:
+                    python_unit_tests = generate_unit_tests(python_function)
+                    write_to_file(python_unit_tests, output_test_file)
+
+                    test_result, pytest_output = run_tests(
+                        python_function, python_unit_tests, docker_image="python:3.8"
+                    )
+
+                    print(pytest_output)
+
+                    if test_result == TestResult.PASSED:
+                        break
+                    else:
+                        response = typer.prompt("Would you like to continue? [y/N]: ")
+                        if response.lower() == "y":
+                            break
+
+            # repo = Repo(os.getcwd())
+            # repo.index.add([os.getcwd() + "/" + outfile])
+            # repo.index.commit(f"[AI] Created {func} in {outfile}")
+
+            # Let human make edits to make the unit tests pass
             continue
 
-    # Generate unit test, write to test/test_photosynthesis.py
-    # iterate code until it passes or converges on unit tests, commiting to git each time
-    # Write to file
-    # Let human make updates before continuing
 
-    # Would you like to translate another function?
+@app.command()
+def analyze(
+    repo_path="./",
+    file_path="examples/fibonacci/python/fibonacci.py",
+):
+    """
+    Analyze the codebase to see how much of it was written by AI, using git blame.
+    """
+    repo = Repo(repo_path)
+    blame = repo.blame("HEAD", file_path)
+    total_lines = sum(len(lines) for _, lines in blame)  # type: ignore
+    ai_lines = sum(len(lines) for commit, lines in blame if commit.message.startswith("[AI]"))  # type: ignore
+    percentage = (ai_lines / total_lines) * 100
+    rich.print(f":robot: {percentage:.2f}% of the code was written by AI")
 
 
 if __name__ == "__main__":
