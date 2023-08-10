@@ -22,6 +22,8 @@ def run_and_record(path):
     for filename in os.listdir(path):
         if filename.endswith(".py"):
             module_name = filename[:-3]  # Remove .py extension
+            if module_name.startswith("_"):
+                continue
             file_path = os.path.join(path, filename)
 
             spec = importlib.util.spec_from_file_location(module_name, file_path)

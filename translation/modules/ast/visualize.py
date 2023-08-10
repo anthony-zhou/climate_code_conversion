@@ -1,6 +1,9 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 from pyvis.network import Network
+import pprint
+
+import translation.modules.ast.parser as parser
 
 
 def draw_dag_and_save(dag, filename):
@@ -27,18 +30,42 @@ if __name__ == "__main__":
 
     # pp = pprint.PrettyPrinter(indent=4)
 
-    # sorted_functions = get_sorted_functions(
+    # sorted_functions = parser.get_sorted_functions(
     #     # "./examples/daylength_2/fortran/DaylengthMod.f90"
-    #     "./ast/tests/SampleMod.f90"
+    #     "../../../archive/examples/photosynthesis/PhotosynthesisMod.f90"
     # )
 
     # for func_name, func in sorted_functions:
     #     print(func_name)
-    #     if func_name == "ci_func":
-    #         print(func["source"])
     #     # print(func["source"])
 
-    # dag = _dependencies_to_dag(_find_dependencies("./tests/SampleMod.f90"))
+    # dag = parser.get_dag("../../../archive/examples/photosynthesis/PhotosynthesisMod.f90")
+
+    # BEGIN: 6j8d5k3h7f4g
+    node = "hybrid"
+
+    # Get the DAG
+    dag = parser.get_dag(
+        "../../../archive/examples/photosynthesis/PhotosynthesisMod.f90"
+    )
+
+    # Create a new graph with only the predecessors of node
+    predecessors = list(dag.predecessors(node))
+    predecessors.append(node)
+    current_predecessors = predecessors.copy()
+    while current_predecessors:
+        pred = current_predecessors.pop()
+        new_predecessors = dag.predecessors(pred)
+        predecessors.extend(new_predecessors)
+        current_predecessors.extend(new_predecessors)
+
+    new_dag = dag.subgraph(predecessors)
+
+    # Draw the new DAG
+    draw_dag_and_save(new_dag, "node_predecessors.png")
+    # END: 6j8d5k3h7f4g
+
+    # dag = p.get_dag()
 
     # draw_dag_and_save(
     #     dag,
