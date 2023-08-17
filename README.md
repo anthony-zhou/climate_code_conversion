@@ -7,34 +7,8 @@ Converting Fortran code in climate models to Python code using ChatGPT.
 Assuming you are running Ubuntu:
 
 1. Install Python 3. 
-2. `sudo apt install gfortran cmake` as build tools for Fortran.
-3. `sudo apt install m4` as a prerequisite for pFUnit. 
-4. Install `pFUnit` (see below)
 5. `pip install -r requirements.txt` to install all Python packages
 6. `pip install -e .` to  add the local `translation` package to your path (needed for absolute imports)
-
-Once you've installed `pFUnit`, get the absolute path to its installation directory and add it to as an environment variable (e.g. `export PFUNIT_DIR=/home/ubuntu/pFUnit/build/installed`). 
-
-### Installing `pFUnit`
-
-`pFUnit` is a testing library for Fortran that is used by CTSM for unit testing. Here's how you install it:
-
-1. `export FC=gfortran`
-2. `git clone https://github.com/Goddard-Fortran-Ecosystem/pFUnit.git`
-3. `cd pFUnit`
-4. `mkdir build`
-5. `cd build`
-6. `cmake ..`
-7. `make`
-8. `make install`
-
-Then pFUnit should be installed. Note that you may get the error (when running `make`) that you don't have `python` installed. If so, you should install it so that `python -V` works from the command line. 
-
-By default, pFUnit should install to `./pfUnit/build/installed`. Go to this directory and `pwd` for the absolute path. 
-
-## Environment Variables
-
-To run the LLM code, you need an `OPENAI_API_KEY` environment variable. You can set this from a `.env` file in this directory. For example: `touch .env && echo "OPENAI_API_KEY=sk-yadayadayada" > .env`.
 
 ## Running the CLI
 
@@ -42,12 +16,9 @@ To run the CLI, call `python ./translation/main.py`. This is a work in progress.
 
 ## Folder Structure
 
-`archive` contains old files.
-`fortran` contains a Fortran version of photosynthesis.
-`python_ci_func` contains a Python version of photosynthesis.
+`_codegen`, `_parsing`, and `_testing` contain independent subroutines for doing those things.  
+`_demos` contains Python notebooks demonstrating the results shared in the paper. 
 `tests` contains unit tests for the `translation` module.
 `translation` contains the `translation` module, which is primarily a CLI used to translate code automatically. 
 
-## Testing
-
-Use `pytest` for Python unit tests.
+You can think of `translation` as a work-in-progress attempt to combine the insights from getting good at `_codegen`, `_parsing`, and `_testing`, even though each can be used individually.
