@@ -22,3 +22,7 @@ To run the CLI, call `python ./translation/main.py`. This is a work in progress.
 `translation` contains the `translation` module, which is primarily a CLI used to translate code automatically. 
 
 You can think of `translation` as a work-in-progress attempt to combine the insights from getting good at `_codegen`, `_parsing`, and `_testing`, even though each can be used individually.
+
+## Visualization
+
+![Visualization of the codebase](./diagram.svg)
