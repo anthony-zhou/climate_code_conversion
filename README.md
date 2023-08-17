@@ -25,4 +25,6 @@ You can think of `translation` as a work-in-progress attempt to combine the insi
 
 ## Visualization
 
+Here's a visual representation of the folder structure, courtesy of GitHub Next's [repo visualizer](https://github.com/githubocto/repo-visualizer):
+
 ![Visualization of the codebase](./diagram.svg)
