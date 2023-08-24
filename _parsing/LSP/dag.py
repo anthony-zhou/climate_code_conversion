@@ -44,6 +44,7 @@ def draw_dag_interactive(dag, outfile):
 
 
 def assemble_symbol_table(root_path: str, uri: str, module_sources):
+    # This method is really naive -- we should use cached symbols instead of refecthing them every time.
     symbols = {}
     for module_source in module_sources:
         if module_source["definition"] is not None:
@@ -98,6 +99,8 @@ def fetch_range(lines: list[str], symbol_range):
 
 def add_module_to_dag(root_path: str, uri: str):
     module_sources = modules.get_module_sources(root_path, uri)
+    # print(uri)
+    # print(module_sources)
     internal_symbols = lsp.get_document_symbols(root_path=root_path, uri=uri)
     symbols = assemble_symbol_table(root_path, uri, module_sources)
 
@@ -105,6 +108,8 @@ def add_module_to_dag(root_path: str, uri: str):
 
     with open(uri, mode="r") as f:
         lines = f.read().split("\n")
+        print(uri)
+
         for symbol in internal_symbols:
             v = Node(name=symbol["name"], uri=uri)
             modifications.append(("add_node", str(v)))
@@ -114,6 +119,7 @@ def add_module_to_dag(root_path: str, uri: str):
             # Could look into using a semanticTokens API call to LSP, if that exists. Or use LFortran for this.
             for token in re.split(r"[ \(\)\+\-\*\/\=,:]", symbol_text):
                 if token in symbols:
+                    print(token)
                     uri = symbols[token]["symbol"]["location"]["uri"]
                     if uri.startswith("file://"):
                         uri = uri[7:]
@@ -127,8 +133,8 @@ if __name__ == "__main__":
     # root_path = (
     #     "/Users/anthony/Documents/climate_code_conversion/dependency_graphs/fortranlib"
     # )
-    # root_path = "/Users/anthony/Documents/climate_code_conversion/dependency_graphs/samples/fortran-utils"
-    root_path = "/Users/anthony/Documents/GitHub/ESCOMP/CTSM"
+    root_path = "/Users/anthony/Documents/climate_code_conversion/_parsing/LSP/samples/fortran-utils"
+    # root_path = "/Users/anthony/Documents/GitHub/ESCOMP/CTSM"
     # root_path = "/Users/anthony/Documents/climate_code_conversion/dependency_graphs/samples/tcp-client-server"
 
     graph = nx.DiGraph()
