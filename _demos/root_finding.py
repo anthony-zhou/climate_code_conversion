@@ -36,6 +36,26 @@ def element_bisect(a, b,eps=1e-6):
     return final_c
 
 
+def element_secant(a, b):
+    def condition(state):
+        a, b = state
+        return jnp.abs(f(a)) >= eps
+
+    def body(state):
+        a, b = state
+        secant_intercept = a - f(a) / ((f(a) - f(b)) / (a - b))
+        b = a
+        a = secant_intercept
+        return a, b
+    
+    init_state = (a, b)
+    final_a, final_b = jax.lax.while_loop (condition, body, init_state)
+
+    return final_a
+
+
+
+
 
 def measure_time(device, fn, inputs):
     # Set the JAX device
@@ -82,7 +102,11 @@ def measure_time_sequential(device, fn, inputs):
     return time.time() - start_time
 
 
+
+
+
 if __name__ == '__main__':
+
     num_samples = 100
     a = jnp.linspace(-4, 0.5, num=num_samples)
     b = jnp.linspace(2, 5, num=num_samples)
@@ -101,15 +125,30 @@ if __name__ == '__main__':
     else:
         print("No GPU backend detected.")
 
-    # Measure runtime sequentially.
-    # This becomes prohibitively slow for n>100 (even on n=100 it takes 8 seconds).
 
-    cpu_time = measure_time_sequential("cpu", vectorized_bisect, (a, b))
+
+    vectorized_secant = jax.vmap(element_secant, in_axes=(0, 0))
+
+
+    cpu_time = measure_time("cpu", vectorized_secant, (a, b))
     print(f"Time on CPU: {cpu_time:.6f} seconds")
 
     # Only measure GPU time if a GPU is available
     if jax.lib.xla_bridge.get_backend().platform == "gpu":
-        gpu_time = measure_time_sequential("gpu", vectorized_bisect, (a, b))
+        gpu_time = measure_time("gpu", vectorized_secant, (a, b))
         print(f"Time on GPU: {gpu_time:.6f} seconds")
     else:
         print("No GPU backend detected.")
+
+    # Measure runtime sequentially.
+    # This becomes prohibitively slow for n>100 (even on n=100 it takes 8 seconds).
+
+    # cpu_time = measure_time_sequential("cpu", vectorized_bisect, (a, b))
+    # print(f"Time on CPU: {cpu_time:.6f} seconds")
+
+    # # Only measure GPU time if a GPU is available
+    # if jax.lib.xla_bridge.get_backend().platform == "gpu":
+    #     gpu_time = measure_time_sequential("gpu", vectorized_bisect, (a, b))
+    #     print(f"Time on GPU: {gpu_time:.6f} seconds")
+    # else:
+    #     print("No GPU backend detected.")
