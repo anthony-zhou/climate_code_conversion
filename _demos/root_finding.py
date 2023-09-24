@@ -1,5 +1,7 @@
 ## Testing different methods of root finding in JAX
 
+# Methods adapted from Haskell: https://github.com/osveliz/numerical-veliz/blob/master/src/rootfinding/BrentDekker.hs
+
 import jax
 from jax import numpy as jnp
 from collections import namedtuple
@@ -16,7 +18,7 @@ eps = 10**(-7)
 
 Result = namedtuple('Result', ['root', 'steps'])
 
-def element_bisect(a, b,eps=1e-6):
+def element_bisect(a, b):
     def condition(state):
         a, b, c = state
         return jnp.abs(b - a) >= eps
@@ -53,6 +55,8 @@ def element_secant(a, b):
 
     return final_a
 
+
+# def root_dekker(a, b):
 
 
 
