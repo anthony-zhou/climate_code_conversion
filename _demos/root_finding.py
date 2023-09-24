@@ -13,11 +13,12 @@ from functools import partial
 def f(x):
     return x ** 3 - x ** 2 - x - 1
 
-eps = 10**(-7)
+eps = 1e-6
 
 
 Result = namedtuple('Result', ['root', 'steps'])
 
+@jax.jit
 def element_bisect(a, b):
     def condition(state):
         a, b, c = state
@@ -37,7 +38,7 @@ def element_bisect(a, b):
     
     return final_c
 
-
+@jax.jit
 def element_secant(a, b):
     def condition(state):
         a, b = state
@@ -55,8 +56,69 @@ def element_secant(a, b):
 
     return final_a
 
+@jax.jit
+def between(a, b, x):
+    return jax.lax.cond(
+        a <= b,
+        lambda: (a <= x) & (x <= b),
+        lambda: (b <= x) & (x <= a)
+    )
 
-# def root_dekker(a, b):
+@jax.jit
+def element_dekker(a, b):
+    return jax.lax.cond(
+        abs(f(a)) < abs(f(b)),
+        lambda: dekker_helper(b, a, b),
+        lambda: dekker_helper(a, b, a)
+    )
+
+@jax.jit
+def dekker_helper(a, b, c):
+    def condition(state):
+        a, b, c = state
+        return abs(b - a) >= eps
+
+    def body(state):
+        a, b, c = state
+        # precondition
+        a, b = jax.lax.cond(
+            abs(f(a)) < abs(f(b)),
+            lambda: (b, a),
+            lambda: (a, b)
+        )
+        
+        # compute midpoint and secant
+        m = (a+b)/2.0
+        s = jax.lax.cond(
+            f(b) - f(c) != 0,
+            lambda: b - f(b)/((f(b)-f(c))/(b-c)),
+            lambda: m
+        )
+
+        a, b = jax.lax.cond(
+            between(b, m, s),
+            # secant
+            lambda: jax.lax.cond(
+                f(a) * f(s) > 0,
+                lambda: (b, s),
+                lambda: (a, s)
+            ),
+            # bisect
+            lambda: jax.lax.cond(
+                f(a) * f(m) > 0,
+                lambda: (b, m),
+                lambda: (a, m)
+            )
+        )
+
+        c = b
+
+        return a, b, c
+
+    init_state = (a, b, c)
+    final_a, final_b, final_c = jax.lax.while_loop(condition, body, init_state)    
+
+    return final_b
 
 
 
@@ -107,52 +169,29 @@ def measure_time_sequential(device, fn, inputs):
 
 
 
-
-
-if __name__ == '__main__':
-
-    num_samples = 100
+def compare_cpu_gpu(fn):
+    num_samples = 1000
     a = jnp.linspace(-4, 0.5, num=num_samples)
     b = jnp.linspace(2, 5, num=num_samples)
 
-
-    vectorized_bisect = jax.vmap(element_bisect, in_axes=(0, 0))
-
-
-    cpu_time = measure_time("cpu", vectorized_bisect, (a, b))
+    vectorized_fn = jax.vmap(fn, in_axes=(0, 0))
+    cpu_time = measure_time("cpu", vectorized_fn, (a, b))
     print(f"Time on CPU: {cpu_time:.6f} seconds")
 
     # Only measure GPU time if a GPU is available
     if jax.lib.xla_bridge.get_backend().platform == "gpu":
-        gpu_time = measure_time("gpu", vectorized_bisect, (a, b))
+        gpu_time = measure_time("gpu", vectorized_fn, (a, b))
         print(f"Time on GPU: {gpu_time:.6f} seconds")
     else:
         print("No GPU backend detected.")
 
 
+if __name__ == '__main__':
+    print("Dekker's Method:")
+    compare_cpu_gpu(element_dekker)
 
-    vectorized_secant = jax.vmap(element_secant, in_axes=(0, 0))
+    print("Bisection Method:")
+    compare_cpu_gpu(element_bisect)
 
-
-    cpu_time = measure_time("cpu", vectorized_secant, (a, b))
-    print(f"Time on CPU: {cpu_time:.6f} seconds")
-
-    # Only measure GPU time if a GPU is available
-    if jax.lib.xla_bridge.get_backend().platform == "gpu":
-        gpu_time = measure_time("gpu", vectorized_secant, (a, b))
-        print(f"Time on GPU: {gpu_time:.6f} seconds")
-    else:
-        print("No GPU backend detected.")
-
-    # Measure runtime sequentially.
-    # This becomes prohibitively slow for n>100 (even on n=100 it takes 8 seconds).
-
-    # cpu_time = measure_time_sequential("cpu", vectorized_bisect, (a, b))
-    # print(f"Time on CPU: {cpu_time:.6f} seconds")
-
-    # # Only measure GPU time if a GPU is available
-    # if jax.lib.xla_bridge.get_backend().platform == "gpu":
-    #     gpu_time = measure_time_sequential("gpu", vectorized_bisect, (a, b))
-    #     print(f"Time on GPU: {gpu_time:.6f} seconds")
-    # else:
-    #     print("No GPU backend detected.")
+    print("Secant Method:")
+    compare_cpu_gpu(element_secant)
