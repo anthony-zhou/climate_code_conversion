@@ -122,6 +122,66 @@ def dekker_helper(a, b, c):
 
 
 
+# Inverse quadratic interpolation
+def iqi(a, b, c):
+    """
+    Arguments: a, b, and c are three x coordinates.
+    Returns: the x-intercept of the "sideways" parabola spanning (a, f(a)), (b, f(b)) and (c, f(c)).
+    """
+    fa = f(a)
+    fb = f(b)
+    fc = f(c)
+
+    return c * (fa*fb) / ((fc - fb) * (fc - fa)) \
+            + b * (fc * fa) / ((fb - fc) * (fb - fa)) \
+            + a * (fc * fb) / ((fa - fc) * (fa - fb))
+
+
+def element_brent(a, b):
+    fa = f(a)
+    fb = f(b)
+
+    bflag = False
+    a, b, c = (b, a, b) if abs(fa) < abs(fb) else (a, b, a)
+
+
+    while abs(fb) >= eps:
+        d = c
+        a, b = (b, a) if abs(fa) < abs(fb) else (a, b)
+        print(a, b, c, d)
+
+        # TODO: maybe check signs of a and b?
+        
+
+        # Compute midpoint and interpolation
+        m = (a+b)/2.0
+        if f(a) != f(c) and f(b) != f(c):
+            # IQI
+            s = iqi(a, b, c)
+        else:
+            # secant
+            s = b - f(b)/((f(b)-f(c))/(b-c))
+        
+
+        # Take a step
+        k = (3*a + b) / 4
+        can_interpolate = abs(s - b) < (1/2)*abs(b - c) if bflag else c == d or abs(s - b) < (1/2)*abs(c - d)
+
+        if can_interpolate and between(k, b, s):
+            # use interpolation
+            a, b, c = (b, s, b) if f(a) * f(s) > 0 else (a, s, b)
+            bflag = False
+        else:
+            # use bisection
+            a, b, c = (b, m, b) if f(a) * f(m) > 0 else (a, m, b)
+            bflag = True
+
+        fb = f(b)
+
+
+    return b
+
+
 
 def measure_time(device, fn, inputs):
     # Set the JAX device
@@ -187,11 +247,32 @@ def compare_cpu_gpu(fn):
 
 
 if __name__ == '__main__':
-    print("Dekker's Method:")
-    compare_cpu_gpu(element_dekker)
+    a = 1.0
+    b = 2.0
+    # a_arr = jnp.array([1])
+    # b_arr = jnp.array([2])
 
-    print("Bisection Method:")
-    compare_cpu_gpu(element_bisect)
+    print("Brent's Method")
+    root = element_brent(a, b)
+    print(root)
 
-    print("Secant Method:")
-    compare_cpu_gpu(element_secant)
+    print("Dekker's Method")
+    root = element_dekker(a, b)
+    print(root)
+
+    print("Bisection Method")
+    root = element_bisect(a, b)
+    print(root)
+
+    print("Secant Method")
+    root = element_secant(a, b)
+    print(root)
+
+    # print("Dekker's Method:")
+    # compare_cpu_gpu(element_dekker)
+
+    # print("Bisection Method:")
+    # compare_cpu_gpu(element_bisect)
+
+    # print("Secant Method:")
+    # compare_cpu_gpu(element_secant)
