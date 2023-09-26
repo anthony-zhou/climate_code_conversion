@@ -4,6 +4,7 @@ from vscipy import main
 from functools import partial 
 import numpy as np
 
+# WARNING: the 1e7 grid sample takes about 1000 seconds (17 minutes) to run
 
 grid_samples = [1000, 10000, 100000, 1000000, 10000000] # 1e8 is too slow for this
 
