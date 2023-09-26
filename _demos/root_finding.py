@@ -7,9 +7,11 @@ from jax import numpy as jnp
 from collections import namedtuple
 from jax import jit
 import time
+import math
 
 from functools import partial
 
+@jax.jit
 def f(x):
     return x ** 3 - x ** 2 - x - 1
 
@@ -17,6 +19,10 @@ eps = 1e-6
 
 
 Result = namedtuple('Result', ['root', 'steps'])
+
+
+def sign(x):
+    return jax.lax.cond(x < 0, lambda: x & -1, lambda: x & 1)
 
 @jax.jit
 def element_bisect(a, b):
@@ -28,7 +34,7 @@ def element_bisect(a, b):
         a, b, c = state
 
         return jax.lax.cond(
-            f(a) * f(c) > 0,
+            sign(f(a)) != sign(f(b)),
             lambda: (c, b, (a+b)/2),
             lambda: (a, c, (a+b)/2)
         )
@@ -201,6 +207,77 @@ def element_brent(a, b):
     return b
 
 
+# Hybrid method from CLM (simplified a bit)
+@jax.jit
+def element_hybrid(a, b):
+    itermax = 40
+
+    def condition(state):
+        a, b, done, iter = state
+        return (abs(f(b)) >= eps) & (jnp.logical_not(done)) & (iter < itermax)
+    
+    def body(state):
+        a, b, done, iter = state
+        dx = - f(b) * ((b-a) / (f(b)-f(a)))
+        s = b - dx
+        # Check for small step sizes
+        b, done = jax.lax.cond(
+            abs(dx) < abs(s) * eps,
+            lambda: (b, True),
+            lambda: (b, False),
+        )
+        
+        a = b
+        b = s
+
+        b, done = jax.lax.cond(
+            f(a) * f(b) < 0,
+            lambda: (element_brent(a, b), True),
+            lambda: (b, False)
+        )
+        
+        return (a, b, done, iter + 1)
+       
+
+    
+    b = 0.99 * a
+    a, b, done, iter = jax.lax.while_loop(condition, body, (a, b, False, 0))
+
+    return b
+
+
+@jax.jit
+def sign_change(x):
+    # Keep checking outward points until you have a sign change on f
+
+    diff = jax.lax.cond(
+        x != 0,
+        lambda: x / 50,
+        lambda: 1/50
+    )
+    a, b = x - diff, x + diff 
+    
+    def condition(state):
+        a, b, diff = state
+        return f(a) * f(b) >= 0
+    
+    def body(state):
+        a, b, diff = state
+
+        diff *= math.sqrt(2)
+        a, b = x - diff, x + diff
+
+        return a, b, diff
+
+    a, b, diff = jax.lax.while_loop(condition, body, (a, b, diff))
+    return a, b
+
+
+@jax.jit
+def element_brent_with_sign_change(x):
+    a, b = sign_change(x)
+    return element_brent(a, b)
+
 
 def measure_time(device, fn, inputs):
     # Set the JAX device
@@ -226,48 +303,31 @@ def measure_time(device, fn, inputs):
     return time.time() - start_time
 
 
-# Alternative measure time, using a for loop
-# The results here confirm our intuition that 
-# GPU is only faster on large vector inputs,
-# where we see a benefit from parallelization.
-# On sequential operations, GPU is the same as CPU. 
-def measure_time_sequential(device, fn, inputs):
-    # Set the JAX device
-    jax.devices(device)
-    
-    a, b = inputs
-    a = [jnp.array([i]) for i in a]
-    b = [jnp.array([i]) for i in b]
-
-    start_time = time.time()
-
-    for a, b in zip(a, b):
-        _ = fn(a, b)
-
-    return time.time() - start_time
-
-
-
-def compare_cpu_gpu(fn):
-    num_samples = 1000000
-    a = jnp.linspace(-4, 0.5, num=num_samples)
-    b = jnp.linspace(2, 5, num=num_samples)
-
-    vectorized_fn = jax.vmap(fn, in_axes=(0, 0))
-    cpu_time = measure_time("cpu", vectorized_fn, (a, b))
+def compare_cpu_gpu(fn, *args):
+    vectorized_fn = jax.vmap(fn)
+    cpu_time = measure_time("cpu", vectorized_fn, args)
     print(f"Time on CPU: {cpu_time:.6f} seconds")
 
     # Only measure GPU time if a GPU is available
     if jax.lib.xla_bridge.get_backend().platform == "gpu":
-        gpu_time = measure_time("gpu", vectorized_fn, (a, b))
+        gpu_time = measure_time("gpu", vectorized_fn, args)
         print(f"Time on GPU: {gpu_time:.6f} seconds")
     else:
         print("No GPU backend detected.")
 
 
 if __name__ == '__main__':
+
+    # x, y = sign_change(2.0, f)
+
+    # print(x, y)
+
     # a = 1.0
     # b = 2.0
+
+    # print("Hybrid Method")
+    # root = element_hybrid(a, b)
+    # print(root)
 
     # print("Brent's Method")
     # root = element_brent(a, b)
@@ -285,14 +345,26 @@ if __name__ == '__main__':
     # root = element_secant(a, b)
     # print(root)
 
+    num_samples = 1000000
+    a = jnp.linspace(-4, 0.5, num=num_samples)
+    b = jnp.linspace(2, 5, num=num_samples)
+
+    # Not working yet...
+    # I think this fails to terminate for some inputs
+    # print("Hybrid Method:")
+    # compare_cpu_gpu(element_hybrid)
+
+    print("Brent's Method with sign change:")
+    compare_cpu_gpu(element_brent_with_sign_change, b)
+
     print("Brent's Method:")
-    compare_cpu_gpu(element_brent)
+    compare_cpu_gpu(element_brent, a, b)
 
     print("Dekker's Method:")
-    compare_cpu_gpu(element_dekker)
+    compare_cpu_gpu(element_dekker, a, b)
 
     print("Bisection Method:")
-    compare_cpu_gpu(element_bisect)
+    compare_cpu_gpu(element_bisect, a, b)
 
     print("Secant Method:")
-    compare_cpu_gpu(element_secant)
+    compare_cpu_gpu(element_secant, a, b)
