@@ -124,25 +124,30 @@ def root_func(lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c):
     )
     return lambda x: partial(x)[0]
 
+def sign_change(x, f):
+    # Keep checking outward points until you have a sign change on f
+
+    diff = x / 50 if x != 0 else 1/50
+    
+    a, b = x - diff, x + diff 
+    
+    while f(a) * f(b) > 0:
+        diff *= math.sqrt(2)
+        a, b = x - diff, x + diff
+
+    return a, b
+
 
 def solve_ci(ci, f):
     # First find a negative value
-    lower = ci / 2.0
-
-    # Technically instead of doing ci / 2.0 we should do something like this:
-    # ci = np.linspace(0, 80, 50)
-    # fval = np.zeros(50)
-    # for i in range(50):
-    #     fval[i] = f(ci[i])
-    #     if fval[i] < -1:
-    #         lower = ci[i]
+    lower, higher = sign_change(ci, f)
 
     # fig = go.Figure()
     # fig.add_trace(go.Scatter(x=ci, y=fval))
     # fig.update_layout(title="ci_func", xaxis_title="ci", yaxis_title="fval")
     # fig.write_image("./fig4.png")
 
-    sol = root_scalar(f, bracket=[lower, 90.0], method="brentq", rtol=1e-2)
+    sol = root_scalar(f, bracket=[lower, higher], method="brentq", rtol=1e-2)
 
     return sol.root
 

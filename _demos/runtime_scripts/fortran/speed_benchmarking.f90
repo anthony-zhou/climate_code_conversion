@@ -3,7 +3,7 @@ program speed_benchmarking
 
     implicit none
     double precision :: start_time, end_time, elapsed_time
-    integer :: i, n
+    integer :: i, n, j
     integer,parameter :: r8 = selected_real_kind(12) ! 8 byte real
 
 
@@ -20,6 +20,8 @@ program speed_benchmarking
     real(r8)     :: fval     ! return function of the value f(ci)
     real(r8)     :: gs_mol   ! leaf stomatal conductance (umol H2O/m**2/s)
     integer :: iter              !number of iterations used, for record only
+
+    integer :: grid_sizes(6) ! grid sizes to for runtimes
 
 
     integer :: unit_number
@@ -44,10 +46,13 @@ program speed_benchmarking
     c = 1
     
 
+    grid_sizes = (/1000, 10000, 100000, 1000000, 10000000, 100000000/)
     
-    do n = 0, 1000, 20
+
+    do i = 1, size(grid_sizes)
+        n = grid_sizes(i)
         call cpu_time(start_time)
-        do i = 0, n
+        do j = 0, n
             call hybrid(ci, p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, iter)
         end do
         call cpu_time(end_time)

@@ -1,5 +1,5 @@
 import pytest
-from comparisons.vnumba import ci_func
+from _demos.runtime_scripts.numba.vnumba import ci_func
 
 def test_ci_func():
     ci = 40

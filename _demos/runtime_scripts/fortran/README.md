@@ -16,4 +16,6 @@ chmod +x run_tests.sh
 ./run_tests.sh
 ```
 
+## Runtime benchmarks
 
+To get runtime benchmarks, run `make speed_benchmarking` and then `./speed_benchmarking`. This will write the runtime results to the file `fortran_runtime.txt`.

@@ -1,9 +1,7 @@
 import math
 import numpy as np
-from numba import jit
 
 
-@jit(nopython=True)
 def hybrid(x0, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c):
     eps = 1e-2
     eps1 = 1e-4
@@ -81,7 +79,6 @@ def hybrid(x0, lmr_z, par_z, gb_mol, je, cair, oair, rh_can, p, iv, c):
     return x0, gs_mol, iter
 
 
-@jit(nopython=True)
 def brent(
     x1,
     x2,
@@ -168,11 +165,9 @@ def brent(
         a = b
         fa = fb
 
-        print(d)
         if abs(d) > tol1:
             b = b + d
         else:
-            print("adding tolerance to b")
             b = b + math.copysign(tol1, xm)
 
         fb, gs_mol = ci_func(
@@ -189,7 +184,6 @@ def brent(
     return x, gs_mol
 
 
-@jit(nopython=True)
 def quadratic_roots(a, b, c):
     sqrt_discriminant = math.sqrt(b**2 - 4 * a * c)
     root1 = (-b - sqrt_discriminant) / (2 * a)
@@ -197,7 +191,6 @@ def quadratic_roots(a, b, c):
     return root1, root2
 
 
-@jit(nopython=True)
 def ci_func(
     ci,
     lmr_z,
@@ -295,7 +288,6 @@ def ci_func(
     return fval, gs_mol
 
 
-@jit(nopython=True)
 def main(
     ci,
     lmr_z,
