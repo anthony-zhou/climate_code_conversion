@@ -20,9 +20,7 @@ eps = 1e-6
 
 Result = namedtuple('Result', ['root', 'steps'])
 
-
-def sign(x):
-    return jax.lax.cond(x < 0, lambda: x & -1, lambda: x & 1)
+sign = lambda x: jax.lax.cond(x < 0, lambda: x & -1, lambda: x & 1)
 
 @jax.jit
 def element_bisect(a, b):
@@ -34,7 +32,7 @@ def element_bisect(a, b):
         a, b, c = state
 
         return jax.lax.cond(
-            sign(f(a)) != sign(f(b)),
+            f(a) * f(c) > 0,
             lambda: (c, b, (a+b)/2),
             lambda: (a, c, (a+b)/2)
         )
