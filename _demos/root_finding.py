@@ -20,7 +20,9 @@ eps = 1e-6
 
 Result = namedtuple('Result', ['root', 'steps'])
 
-sign = lambda x: jax.lax.cond(x < 0, lambda: x & -1, lambda: x & 1)
+@jax.jit
+def sign(x):
+    return x < 0
 
 @jax.jit
 def element_bisect(a, b):
@@ -32,7 +34,7 @@ def element_bisect(a, b):
         a, b, c = state
 
         return jax.lax.cond(
-            f(a) * f(c) > 0,
+            sign(f(a)) == sign(f(c)),
             lambda: (c, b, (a+b)/2),
             lambda: (a, c, (a+b)/2)
         )
@@ -103,13 +105,13 @@ def dekker_helper(a, b, c):
             between(b, m, s),
             # secant
             lambda: jax.lax.cond(
-                f(a) * f(s) > 0,
+                sign(f(a)) == sign(f(s)),
                 lambda: (b, s),
                 lambda: (a, s)
             ),
             # bisect
             lambda: jax.lax.cond(
-                f(a) * f(m) > 0,
+                sign(f(a)) == sign(f(m)),
                 lambda: (b, m),
                 lambda: (a, m)
             )
@@ -177,13 +179,13 @@ def element_brent(a, b):
             can_interpolate & between(k, b, s),
             # Use interpolation
             lambda: jax.lax.cond(
-                f(a) * f(s) > 0,
+                sign(f(a)) == sign(f(s)),
                 lambda: (b, s, b, False),
                 lambda: (a, s, b, False)
             ),
             # Use bisection
             lambda: jax.lax.cond(
-                f(a) * f(m) > 0,
+                sign(f(a)) == sign(f(m)),
                 lambda: (b, m, b, True),
                 lambda: (a, m, b,True)
             )
@@ -257,7 +259,7 @@ def sign_change(x):
     
     def condition(state):
         a, b, diff = state
-        return f(a) * f(b) >= 0
+        return sign(f(a)) == sign(f(b))
     
     def body(state):
         a, b, diff = state

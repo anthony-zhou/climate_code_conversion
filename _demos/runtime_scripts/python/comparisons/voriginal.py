@@ -165,11 +165,9 @@ def brent(
         a = b
         fa = fb
 
-        print(d)
         if abs(d) > tol1:
             b = b + d
         else:
-            print("adding tolerance to b")
             b = b + math.copysign(tol1, xm)
 
         fb, gs_mol = ci_func(
