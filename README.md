@@ -2,7 +2,7 @@
 
 Converting Fortran code in climate models to Python code using ChatGPT. 
 
-This work was presented at the Tackling Climate Change with Machine Learning Workshop at NeurIPS 2023: https://www.climatechange.ai/papers/neurips2023/103
+This work was presented at the Tackling Climate Change with Machine Learning Workshop at NeurIPS 2023, with the title [Proof-of-concept: Using ChatGPT to Translate and Modernize an Earth System Model from Fortran to Python/JAX](https://www.climatechange.ai/papers/neurips2023/103).
 
 ## Dependencies
 
