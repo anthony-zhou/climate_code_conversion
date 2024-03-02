@@ -28,3 +28,7 @@ You can think of `translation` as a work-in-progress attempt to combine the insi
 Here's a visual representation of the folder structure, courtesy of GitHub Next's [repo visualizer](https://github.com/githubocto/repo-visualizer):
 
 ![Visualization of the codebase](./diagram.svg)
+
+## Paper
+
+This work was presented at the Tackling Climate Change with Machine Learning Workshop at NeurIPS 2023: https://www.climatechange.ai/papers/neurips2023/103
