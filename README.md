@@ -2,6 +2,8 @@
 
 Converting Fortran code in climate models to Python code using ChatGPT. 
 
+This work was presented at the Tackling Climate Change with Machine Learning Workshop at NeurIPS 2023: https://www.climatechange.ai/papers/neurips2023/103
+
 ## Dependencies
 
 Assuming you are running Ubuntu:
@@ -29,6 +31,4 @@ Here's a visual representation of the folder structure, courtesy of GitHub Next'
 
 ![Visualization of the codebase](./diagram.svg)
 
-## Paper
 
-This work was presented at the Tackling Climate Change with Machine Learning Workshop at NeurIPS 2023: https://www.climatechange.ai/papers/neurips2023/103
