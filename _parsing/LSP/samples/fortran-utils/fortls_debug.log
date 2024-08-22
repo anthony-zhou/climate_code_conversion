@@ -1,0 +1,10 @@
+DEBUG:fortls.constants:REQUEST 1 initialize
+INFO:fortls.constants:fortls - Fortran Language Server 2.13.0 Initialized
+DEBUG:fortls.constants:SEND {"jsonrpc":"2.0","method":"window/showMessage","params":{"type":3,"message":"fortls initialization complete"}}
+INFO:fortls.constants:fortls initialization complete
+DEBUG:fortls.constants:SEND {"jsonrpc":"2.0","id":1,"result":{"capabilities":{"completionProvider":{"resolveProvider":false,"triggerCharacters":["%"]},"definitionProvider":true,"documentSymbolProvider":true,"referencesProvider":true,"hoverProvider":true,"implementationProvider":true,"renameProvider":true,"workspaceSymbolProvider":true,"textDocumentSync":2,"codeActionProvider":true}}}
+DEBUG:fortls.constants:SEND {"jsonrpc":"2.0","method":"window/showMessage","params":{"type":3,"message":"fortls debugging enabled"}}
+INFO:fortls.constants:fortls debugging enabled
+DEBUG:fortls.constants:RECV {"jsonrpc": "2.0", "id": 1, "method": "textDocument/documentSymbol", "params": {"textDocument": {"uri": "/Users/anthony/Documents/climate_code_conversion/_parsing/LSP/samples/fortran-utils/tests/special/test_airyai.f90"}}}
+DEBUG:fortls.constants:REQUEST 1 textDocument/documentSymbol
+DEBUG:fortls.constants:SEND {"jsonrpc":"2.0","id":1,"result":[{"name":"test_airyai","kind":2,"location":{"uri":"/Users/anthony/Documents/climate_code_conversion/_parsing/LSP/samples/fortran-utils/tests/special/test_airyai.f90","range":{"start":{"line":0,"character":0},"end":{"line":21,"character":0}}}}]}
